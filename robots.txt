@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: 
+
+Sitemap: http://monkey-h.github.io/sitemap.xml 
