@@ -5,16 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Hello World - Welcome to monkey-H&#8217;s blog</title>
+  <title>Bash 脚本语言学习收获 - Welcome to monkey-H&#8217;s blog</title>
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="test 测试
-hello! world 1
-2
-haha good night 标题一 标题2 百度超链接 www.baidu.com
-$$$2+2$$$ $$hello$$
-|hello| ">
+  <meta name="description" content="写在前面 之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -23,7 +18,7 @@ $$$2+2$$$ $$hello$$
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://monkey-h.github.io/blog/hello-world/">
+  <link rel="canonical" href="http://monkey-h.github.io/blog/bash-trick/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
@@ -73,7 +68,7 @@ $$$2+2$$$ $$hello$$
   
   <header>
     
-      <h1 class="entry-title">Hello World</h1>
+      <h1 class="entry-title">Bash 脚本语言学习收获</h1>
     
     
       <p class="meta">
@@ -82,39 +77,24 @@ $$$2+2$$$ $$hello$$
 
 
 
-<time class='entry-date' datetime='2015-04-28T17:46:50+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:46 pm</span></time>
+<time class='entry-date' datetime='2015-04-29T19:12:01+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:12 pm</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>test 测试
-<code>hello! world</code></p>
+<div class="entry-content"><h1>写在前面</h1>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>haha 
-</span><span class='line'>good night</span></code></pre></td></tr></table></div></figure>
+<p>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。</p>
 
+<h1>学习笔记</h1>
 
-<h1>标题一</h1>
+<ol>
+<li><p>bash执行脚本的时候，会fork出来一个subshell来执行。那么，在脚本里设置的一些变量，就只有那个subshell知道，别的都不知道，也就是说，会被直接遗忘掉。使用export也是一样的效果。同时，注意在赋值的时候，是hello=”1”，不要忘记了没有空格和要有双引号。</p></li>
+<li></li>
+</ol>
 
-<h2>标题2</h2>
-
-<p>百度超链接 <a href="hello">www.baidu.com</a>
-$$$2+2$$$</p>
-
-<p><img src="/Users/monkey/Documents/octopress/source/favicon.png" alt="favicon.png" /></p>
-
-<p>$$hello$$
-|hello|</p>
-
-<hr />
-
-<hr />
-
-<hr />
 </div>
 
 
@@ -130,7 +110,7 @@ $$$2+2$$$</p>
 
 
 
-<time class='entry-date' datetime='2015-04-28T17:46:50+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:46 pm</span></time>
+<time class='entry-date' datetime='2015-04-29T19:12:01+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:12 pm</span></time>
       
 
 
@@ -138,7 +118,7 @@ $$$2+2$$$</p>
     
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/hello-world/" data-via="" data-counturl="http://monkey-h.github.io/blog/hello-world/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/bash-trick/" data-via="" data-counturl="http://monkey-h.github.io/blog/bash-trick/" >Tweet</a>
   
   
   
@@ -147,8 +127,8 @@ $$$2+2$$$</p>
     
     <p class="meta">
       
+        <a class="basic-alignment left" href="/blog/hello-world/" title="Previous Post: hello world">&laquo; hello world</a>
       
-        <a class="basic-alignment right" href="/blog/bash-trick/" title="Next Post: bash 脚本语言学习收获">bash 脚本语言学习收获 &raquo;</a>
       
     </p>
   </footer>
