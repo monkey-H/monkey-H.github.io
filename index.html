@@ -113,16 +113,11 @@
 <li><p>一些小的trick
 echo sp{el,il,al}l
 spell spill spall
-(大括号的优先级是最高的)</p></li>
-</ol>
-
-
-<p>~常被用来解析成$HOME，如~/path等。有两个特殊的应用~+代表的是当前路径，~-代表的是上一次进入的路径。
+(大括号的优先级是最高的)
+~常被用来解析成$HOME，如~/path等。有两个特殊的应用~+代表的是当前路径，~-代表的是上一次进入的路径。
 允许通过:=的方式赋值，比如echo ${FRANKY:=FRIDY} 输出 FRIDY
 假如使用了”$(COMMAND)”的方式，那么，其中的所有字符都会被当做命令，而不会特殊处理。
-如果想在命令里进行计算，有两种方式，$((2+2)) 或者$[2+2]这两种方式，echo这两个结果，都是4</p>
-
-<ol>
+如果想在命令里进行计算，有两种方式，$((2+2)) 或者$[2+2]这两种方式，echo这两个结果，都是4</p></li>
 <li><p>这是一个神奇的命令，是替代，别名的意思，我们可以使用这个东西来简化命令。
 比如，cd ../是回到上一层目录，假如我们使用alias ..=’cd ../’，然后，以后只要打..就可以回到上一层，如果想去除这个简写，只要unalias ..就可以了。当然这个修改只是暂时的，如果想一直这么做，就需要修改./bashrc或者/etc/profile文件。</p></li>
 <li><p>正则表达式</p>
@@ -167,25 +162,20 @@ spell spill spall
 <li>p 打印文本</li>
 <li>r 读一个文件</li>
 <li>s 查找并替代文本</li>
-<li>w 写到一个文件</li>
-</ul>
-</li>
-</ol>
-
-
-<p>举个例子， <code>sed ‘/erors/p’ example</code>的意思就是，在example文件里面，查找有erors的行，并打印出来，假如我们这么写，那么就会把所有的文本都打印出来，只不过，有erors的行，打印两遍，所以我们要这么写<code>sed -n ‘erors/p’ example</code>
+<li>w 写到一个文件
+举个例子， <code>sed ‘/erors/p’ example</code>的意思就是，在example文件里面，查找有erors的行，并打印出来，假如我们这么写，那么就会把所有的文本都打印出来，只不过，有erors的行，打印两遍，所以我们要这么写<code>sed -n ‘erors/p’ example</code>
 假如要删除，<code>sed ’/erors/d’ example</code>，这样就会删除有erors的行。
 假如我们知道要删除的行是第几行，可以通过这么删除，<code>sed ‘2,4d’ example</code> 这样就删除了2-4行。同时可以使用正则表达式等。
 <code>sed -n ‘/a text/,/This/p’ example</code>，这句话的意思就是，从example中匹配，打印从第一个包含a text的行，到保护This的那一行截止。
 <code>sed ‘s/erors/errors’ example</code> 查找并替代。但是这样只会替代第一行，如果要替代所有的，需要<code>sed ‘s/erors/errors/g’ example</code>
 如果多次查找和替换，需要使用-e参数。
 <code>sed -e ‘s/erors/erros/g’ -e ‘s/last/final/g’ example</code>
-同时，可以将结果输出到某一个文件。使用>即可。</p>
-
-<ol>
-<li>if语句。
+同时，可以将结果输出到某一个文件。使用>即可。</li>
+</ul>
+</li>
+<li><p>if语句。
 注意在if [  ]的方括号里面，括号的左右是要有空格的。
-常用的用来判断文件的一些参数。
+常用的用来判断文件的一些参数。</p>
 
 <ul>
 <li>-a 存在即为真</li>
@@ -195,28 +185,25 @@ spell spill spall
 <li>-r 是否可读</li>
 <li>-s 是否大小不为0</li>
 <li>-w 是否可写</li>
-<li>-x 是否有执行权限</li>
+<li>-x 是否有执行权限
+<code>if [ -f /home/monkey/hello ]
+then
+echo “file exist”
+fi</code>
+可以写成
+<code>if [ -f /home/monkey/hello ]; then
+echo “file exist”
+fi</code>
+可以写成
+<code>[ -f /home/monkey/hello ] &amp;&amp; (echo “file exist”)</code>
+如果是当条件不满足做什么东西的时候，就是用||。
+但是，一般很少用这种代码，大部分都会采用test这个内置命令，来检验一些问题。比如
+上面的判断语句可以改为
+<code>test -f /home/monkey/hello &amp;&amp; echo file exist</code></li>
 </ul>
 </li>
 </ol>
 
-
-<p><code>if [ -f /home/monkey/hello ]
-then
-    echo “file exist”
-fi</code>
-可以写成
-<code>if [ -f /home/monkey/hello ]; then
-    echo “file exist”
-fi</code></p>
-
-<p>可以写成
-<code>[ -f /home/monkey/hello ] &amp;&amp; (echo “file exist”)</code></p>
-
-<p>如果是当条件不满足做什么东西的时候，就是用||。
-但是，一般很少用这种代码，大部分都会采用test这个内置命令，来检验一些问题。比如
-上面的判断语句可以改为
-<code>test -f /home/monkey/hello &amp;&amp; echo file exist</code></p>
 </div>
   
   
