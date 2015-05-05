@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-05T09:30:33+08:00</updated>
+  <updated>2015-05-05T09:52:22+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -57,7 +57,7 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#x67;&#x69;&#x74;&#x40;&#103;&#105;&#116;&#46;&#x63;&#111;&#109;">&#103;&#x69;&#x74;&#x40;&#103;&#105;&#116;&#x2e;&#99;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#108;&#x74;&#x6f;&#58;&#x67;&#x69;&#x74;&#x40;&#103;&#x69;&#116;&#46;&#99;&#x6f;&#x6d;">&#x67;&#105;&#116;&#64;&#103;&#x69;&#x74;&#46;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。
 <code>sudo service ssh stop</code>
 <code>sudo /usr/sbin/sshd -d</code>
@@ -117,6 +117,9 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 
 <p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
 
+<!--more-->
+
+
 <h3>背景知识</h3>
 
 <ul>
@@ -130,7 +133,7 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
   关于pluginhook的实现的代码阅读，我们之后再补充。</p></li>
 <li><p>ssh
   ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。
-  <img src="https://github.com/monkey-H/monkey-H.github.io/tree/master/images/email.png" alt="email" />
+  <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshd_zpspxi2f2st.png" alt="email" />
   可以看到，dokku做了一件事情，他把所有的命令，都通过&#8220;这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。</p></li>
 </ul>
 
