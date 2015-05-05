@@ -146,7 +146,7 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#x69;&#x6c;&#x74;&#x6f;&#58;&#x67;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#x2e;&#99;&#111;&#109;">&#x67;&#105;&#116;&#64;&#103;&#105;&#116;&#x2e;&#99;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#x67;&#x69;&#x74;&#x40;&#103;&#105;&#116;&#46;&#x63;&#111;&#109;">&#103;&#x69;&#x74;&#x40;&#103;&#105;&#116;&#x2e;&#99;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。
 <code>sudo service ssh stop</code>
 <code>sudo /usr/sbin/sshd -d</code>
@@ -239,7 +239,7 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
   关于pluginhook的实现的代码阅读，我们之后再补充。</p></li>
 <li><p>ssh
   ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。
-  <img src="email.png" alt="email" />
+  <img src="https://github.com/monkey-H/monkey-H.github.io/tree/master/images/email.png" alt="email" />
   可以看到，dokku做了一件事情，他把所有的命令，都通过&#8220;这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。</p></li>
 </ul>
 
