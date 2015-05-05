@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-05T09:52:22+08:00</updated>
+  <updated>2015-05-05T10:18:57+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -22,16 +22,19 @@
 
 <p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
 
+<!--more-->
+
+
 <h3>dokku文件源码解读</h3>
 
 <p>上一节说到执行dokku receive $APP，找到文件中对应的代码
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/dokku-receive.png" alt="dokku-receive.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-receive_zpsg2szjbzf.png" alt="dokku-receive.png" />
 其实，在执行这段代码之前，还有一些命令要执行，这些命令是主要是一些准备工作，包括环境变量的设置，插件的安装激活，还有原始命令的执行。
 在receive的case里面，主要做了四件事情，包括cleanup，build，release和deploy。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/dokku-cleanup.png" alt="dokku-cleanup.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-cleanup_zpsqkmhu8qc.png" alt="dokku-cleanup.png" />
 cleanup主要有两行命令组成，第一行，是删除paas平台中，状态为推出的container，可以看到，他是直接通过docker的命令执行的。关于docker，如果没有接触过的话，可以看看<a href="docker.com" title="docker 官网">这里</a>。第二行命令，是删除一些没有打标签的image，这些image一般是在生成新的image的过程中产生的临时文件。
 build是用来产生要部署的程序的image的。build和release的case在plugins/00_dokku-standard/command里面可以找到。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/dokku-build.png" alt="dokku-build.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-build_zpso6pqkn0n.png" alt="dokku-build.png" />
 dokku支持两种部署应用的方式，一种是heroku的标准格式，另外一种是dockerfile的格式，我们可以从代码的两个case中看到。我们先看简单的，dockerfile更加简单一些。
 dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如果有，取出想要暴露的端口，并通过dokku config:set-norestart命令，设置成对应程序的环境变量。dokku config:set-norestart命令我们之后再解释。
 <code>pluginhook pre-build-dockerfile "$APP"</code>
@@ -39,9 +42,9 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 这两个插件在后来的更新中都去除了，所以，这两句不会执行。
 还有一句<code>docker build -t .</code>这个是docker的标准的从当前路径，查找Dockerfile，生成image的语法，这样就生成了一个用来部署应用的image。
 除了dockerfile的case，还有一个buildstep的case。在我们安装dokku这个paas平台的时候，就在makefile里面做了一个特殊的image
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/buildstep.png" alt="buildstep.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/buildstep_zpsdvkmpj8u.png" alt="buildstep.png" />
 这个image是安装了heroku标准解释程序的image。而我们后来上传的按照heroku标准写的应用程序，就是通过这个东西来执行的。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/dokku-release.png" alt="dokku-release.png" /></p>
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-release_zpss2dcay6b.png" alt="dokku-release.png" /></p>
 ]]></content>
   </entry>
   
@@ -55,54 +58,57 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 <pre><code>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。
 </code></pre>
 
+<!--more-->
+
+
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#108;&#x74;&#x6f;&#58;&#x67;&#x69;&#x74;&#x40;&#103;&#x69;&#116;&#46;&#99;&#x6f;&#x6d;">&#x67;&#105;&#116;&#64;&#103;&#x69;&#x74;&#46;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#x61;&#x69;&#x6c;&#116;&#111;&#x3a;&#103;&#105;&#116;&#x40;&#x67;&#105;&#x74;&#x2e;&#x63;&#111;&#x6d;">&#103;&#x69;&#x74;&#64;&#103;&#x69;&#x74;&#x2e;&#99;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。
 <code>sudo service ssh stop</code>
 <code>sudo /usr/sbin/sshd -d</code>
 然后在客户端重新部署一个服务，可以看到这样的提示。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/sshd.png" alt="sshd" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshd_zpspxi2f2st.png" alt="sshd" />
 我们去看看，/home/dokku/.sshcommand做了什么。
 <code>cat /home/dokku/.sshcommand</code> <br/>
 输出
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/catsshcommand.png" alt="catsshcommand" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/catsshcommand_zpsmucywnao.png" alt="catsshcommand" />
 这也就说明，不管你原来的命令是什么（$SSH_ORIGINAL_COMMAND），dokku都在这个命令前面增加了一个/usr/local/bin/dokku，也就是修改了客户端ssh进去的进入点，从而实现了进入pass平台部署任务的功能。
 那么这个.sshcommand是怎么来的呢？我们去查看我们的安装文档，我这里是使用的vagrant安装的，我们可以去查看Vagrantfile文件。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/vagrantfile.png" alt="vagrantfile" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/vagrantfile_zpsm3ofhsjy.png" alt="vagrantfile" />
 在这里面，我们可以看到，这里只要是用的makefile安装的，我们接着查看Makefile。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/sshcommand.png" alt="sshcommand" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshcommand_zps4po9ghg4.png" alt="sshcommand" />
 这里可以看到，下载了一个脚本文件，然后执行了
 <code>sshcommand create dokku /usr/local/bin/dokku</code>
 命令，我们可以从makefile中找到SSHCOMMAND_URL的网址
 <code>SSHCOMMAND_URL ?= https://raw.github.com/progrium/sshcommand/master/sshcommand</code>
 进入到这个网址，我们可以看到
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/sshcommandcreate.png" alt="sshcommand" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshcommandcreate_zps1gqu4vme.png" alt="sshcommand" />
 也就是说，在安装dokku paas平台，这个地步的时候，加入了了这个进入点。</p>
 
 <h3>dokku push流程（git插件文件夹解读）</h3>
 
 <p>我们现在来浏览一遍，dokku完整的push一个应用都做了什么。
 首先，我们先把dokku源码的目录整理一下。
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/structure.png" alt="structure" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/structure_zpshzuy9dmb.png" alt="structure" />
 其次，我们已经说过了，dokku修改了进入点，当执行git-receive-pack的时候，并不是直接直接执行，而是修改成了/usr/local/bin/dokku git-receive-pack，那么这样一来，就是调用dokku的命令了。我们从目录结构里面找到dokku文件，在这里面的case里面，并没有找到git-receive-pack这个case，但是，我们找到了一个通配的东西
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/dokku-git*.png" alt="dokku-git*" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-git_zps32ecyn2r.png" alt="dokku-git*" />
 从这里面可以看到，如果找不到对应的case，就去$PLUGIN_PATH/*/command里面去找，直到找到对应的东西。$PLUGIN_PATH路径下的东西就是我们源码中plugins路径下面的东西，我们可以直接在源码里面找。plugins里面的东西的命名还是很科学的，基本每个文件下的都是相关的hook。我们可以在plugins/git/command里面找到相关的东西</p>
 
-<p><img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/git-git*.png" alt="git-git*" />
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-git_zpsjy8lits8.png" alt="git-git*" />
 这里当遇到是git-receive-pack命令的时候，就先初始化一个空的git仓库，然后写了一个脚本，给这个脚本附上可执行权限，并执行。脚本里执行的是
 <code>dokku git-hook $APP</code>
 同样的，我们在相同的文件里面，找到git-hook
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/git-hook.png" alt="git-hook" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-hook_zpspnl5souw.png" alt="git-hook" />
 这里主要是判断用户push是否push到了master分支上，如果没有，提示如何push，如果正确push了，就执行,说明这是一个新push的应用。
 <code>pluginhook receive-app $APP $newrev</code>
 既然是pluginhook方式的调用，我们肯定要在$PLUGIN_PATH里面查找这个文件了，这个文件也在git文件夹里面
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/receive-app.png" alt="receive-app" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/receive-app_zpshkokzbhu.png" alt="receive-app" />
 可以看到，这里执行了
 <code>dokku git-build $APP $REV</code>
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/git-build.png" alt="git-build" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-build_zpsjk6xccvx.png" alt="git-build" />
 这里有两个case，git-build判断是否这个app正在部署，或者被加锁了，否则就加锁，开始部署。git-build-locked就要开始真正的部署了。同样的文件夹找到git_build_app_repo()，
-<img src="http://monkey-h.github.io/Users/monkey/Documents/dokku/codereading/photo/git-build-app.png" alt="git-build-app" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-build-app_zpsvyxylgsi.png" alt="git-build-app" />
 首先，检查一下app name，看看是否为空，或者是否不存在这个app目录，verify_app_name()这个函数在plugins/common/functions这里面，然后建造一个用来run这个应用的临时目录，并把应用拷贝到这个临时目录，最后，通过查看应用中有没有Dockerfile来判断，接下来执行的命令。但是不管有没有dockerfile，都会执行dokku receive命令。
 终于，我们在dokku源码文件中，找到了receive的case分支。</p>
 ]]></content>
@@ -149,6 +155,9 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 
 <pre><code>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。
 </code></pre>
+
+<!--more-->
+
 
 <h3>学习笔记</h3>
 

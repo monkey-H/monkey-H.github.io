@@ -88,16 +88,19 @@
 
 <p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
 
+<!--more-->
+
+
 <h3>dokku文件源码解读</h3>
 
 <p>上一节说到执行dokku receive $APP，找到文件中对应的代码
-<img src="/Users/monkey/Documents/dokku/codereading/photo/dokku-receive.png" alt="dokku-receive.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-receive_zpsg2szjbzf.png" alt="dokku-receive.png" />
 其实，在执行这段代码之前，还有一些命令要执行，这些命令是主要是一些准备工作，包括环境变量的设置，插件的安装激活，还有原始命令的执行。
 在receive的case里面，主要做了四件事情，包括cleanup，build，release和deploy。
-<img src="/Users/monkey/Documents/dokku/codereading/photo/dokku-cleanup.png" alt="dokku-cleanup.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-cleanup_zpsqkmhu8qc.png" alt="dokku-cleanup.png" />
 cleanup主要有两行命令组成，第一行，是删除paas平台中，状态为推出的container，可以看到，他是直接通过docker的命令执行的。关于docker，如果没有接触过的话，可以看看<a href="docker.com" title="docker 官网">这里</a>。第二行命令，是删除一些没有打标签的image，这些image一般是在生成新的image的过程中产生的临时文件。
 build是用来产生要部署的程序的image的。build和release的case在plugins/00_dokku-standard/command里面可以找到。
-<img src="/Users/monkey/Documents/dokku/codereading/photo/dokku-build.png" alt="dokku-build.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-build_zpso6pqkn0n.png" alt="dokku-build.png" />
 dokku支持两种部署应用的方式，一种是heroku的标准格式，另外一种是dockerfile的格式，我们可以从代码的两个case中看到。我们先看简单的，dockerfile更加简单一些。
 dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如果有，取出想要暴露的端口，并通过dokku config:set-norestart命令，设置成对应程序的环境变量。dokku config:set-norestart命令我们之后再解释。
 <code>pluginhook pre-build-dockerfile "$APP"</code>
@@ -105,9 +108,9 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 这两个插件在后来的更新中都去除了，所以，这两句不会执行。
 还有一句<code>docker build -t .</code>这个是docker的标准的从当前路径，查找Dockerfile，生成image的语法，这样就生成了一个用来部署应用的image。
 除了dockerfile的case，还有一个buildstep的case。在我们安装dokku这个paas平台的时候，就在makefile里面做了一个特殊的image
-<img src="/Users/monkey/Documents/dokku/codereading/photo/buildstep.png" alt="buildstep.png" />
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/buildstep_zpsdvkmpj8u.png" alt="buildstep.png" />
 这个image是安装了heroku标准解释程序的image。而我们后来上传的按照heroku标准写的应用程序，就是通过这个东西来执行的。
-<img src="/Users/monkey/Documents/dokku/codereading/photo/dokku-release.png" alt="dokku-release.png" /></p>
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-release_zpss2dcay6b.png" alt="dokku-release.png" /></p>
 </div>
 
 
