@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-05T10:23:44+08:00</updated>
+  <updated>2015-05-05T19:47:53+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -31,9 +31,9 @@
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-receive_zpsg2szjbzf.png" alt="dokku-receive.png" />
 其实，在执行这段代码之前，还有一些命令要执行，这些命令是主要是一些准备工作，包括环境变量的设置，插件的安装激活，还有原始命令的执行。
 在receive的case里面，主要做了四件事情，包括cleanup，build，release和deploy。
++ cleanup主要有两行命令组成，第一行，是删除paas平台中，状态为推出的container，可以看到，他是直接通过docker的命令执行的。关于docker，如果没有接触过的话，可以看看<a href="docker.com" title="docker 官网">这里</a>。第二行命令，是删除一些没有打标签的image，这些image一般是在生成新的image的过程中产生的临时文件。
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-cleanup_zpsqkmhu8qc.png" alt="dokku-cleanup.png" />
-cleanup主要有两行命令组成，第一行，是删除paas平台中，状态为推出的container，可以看到，他是直接通过docker的命令执行的。关于docker，如果没有接触过的话，可以看看<a href="docker.com" title="docker 官网">这里</a>。第二行命令，是删除一些没有打标签的image，这些image一般是在生成新的image的过程中产生的临时文件。
-build是用来产生要部署的程序的image的。build和release的case在plugins/00_dokku-standard/command里面可以找到。
++ build是用来产生要部署的程序的image的。build和release的case在plugins/00_dokku-standard/command里面可以找到。
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-build_zpso6pqkn0n.png" alt="dokku-build.png" />
 dokku支持两种部署应用的方式，一种是heroku的标准格式，另外一种是dockerfile的格式，我们可以从代码的两个case中看到。我们先看简单的，dockerfile更加简单一些。
 dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如果有，取出想要暴露的端口，并通过dokku config:set-norestart命令，设置成对应程序的环境变量。dokku config:set-norestart命令我们之后再解释。
@@ -43,8 +43,34 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 还有一句<code>docker build -t .</code>这个是docker的标准的从当前路径，查找Dockerfile，生成image的语法，这样就生成了一个用来部署应用的image。
 除了dockerfile的case，还有一个buildstep的case。在我们安装dokku这个paas平台的时候，就在makefile里面做了一个特殊的image
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/buildstep_zpsdvkmpj8u.png" alt="buildstep.png" />
-这个image是安装了heroku标准解释程序的image。而我们后来上传的按照heroku标准写的应用程序，就是通过这个东西来执行的。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-release_zpss2dcay6b.png" alt="dokku-release.png" /></p>
+这个image是安装了heroku标准解释程序的image。而我们后来上传的按照heroku标准写的应用程序，就是通过这个东西来执行的。在dokku文件里，<code>export DOKKU_IMAGE=${DOKKU_IMAGE:="progrium/buildstep"}</code>，也就是在这个case里面的$DOKKU_IMAGE，实际上就是之前做的那个image，前面的几行是利用这个可以解释标准heroku的image跑一个container，然后在里面解压需要部署的应用，也就是相当于把应用拷贝进去，之后，commit成一个镜像。中间的几行，查看是否有一些container在启动的过程中的特殊的参数，加上去，执行build，heroku就是通过这个东西来部署应用。部署好了之后，commit成一个镜像。最后一部分，是一些build之后的处理，但是在后来的版本这些东西已经取消了。
++ release部分。和build类似，release也是有两个部分，dockerfile和buildstep。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-release_zpss2dcay6b.png" alt="dokku-release.png" />
+dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平台的一些参数设置导入到了container之中，具体是什么参数，我们可以看到
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/env_zpsjkxrnn0s.png" alt="" />
+主要是等待时间等。这里面的<code>if [[ -f "$DOKKU_ROOT/ENV" ]]</code>是去判断是否存在这个文件，关于if和文件的组合判断，可以去看我的另外一篇blog里面介绍的东西。<a href="http://monkey-h.github.io/blog/bash-trick/" title="bash trick">点击这里</a>
++ deploy部分
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-deploy_zpsbofppa5l.png" alt="deploy" />
+在deploy的开始阶段，首先执行了<code>pluginhook pre-build $APP</code>这段代码调用了plugin的一个插件，pre-build，这个插件可以在plugins/build-env/pre-build中找到
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/pre-build_zpsktyjirfr.png" alt="pre-build" />
+这个插件的作用也是十分明显的，第一，把原来build阶段的环境变量设置成应用的变量（大部分还是一些等待时间等变量），第二，把所有的build阶段的参数，都累加起来，再启动一个容器，把这些变量添加到这个容器中，然后把这个容器commit成一个image，让接下来的启动都从这个image中启动。
+接下来，就需要启动这个app了。首先判断是否已经起了一个这样的应用，如果已经启动了，那么我们就需要知道已经启动的这个容器的id是多少。由于我们在每次部署应用的时候，都会把他的id设置到$DOKKU_ROOOT/$APP/CONTAINER里面去，所以，直接读出来这个东西就ok了。为什么要知道这个id，是由于我们后面要把旧的container杀死，所以必须知道。接下来，DOCKER_ARGS参数已经在后来的版本中取消了，不用看了。要注意，我们执行了这么一句话。
+<code>BIND_EXTERNAL=$(pluginhook bind-external-ip $APP)</code>
+这个插件在plugins/nginx-vhost/bind-external-ip里面
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/bind-ip_zpsejjdrghn.png" alt="" />
+这个函数是通过查看应用的repository，看看有没有设置绑定外网ip的参数，如果有，就返回true，否则返回false.
+<code>is_image_buildstep_based "$IMAGE"</code>
+是用来判断我们之前通过build和release阶段的时候，出来的image是通过dockerfile出来的，还是通过标准heroku来解析的。如果是前者，那么，Dockerfile中应该制定了程序入口，端口之类的东西，如果没有端口指定也不影响，如果是后者，在执行docker run的时候，只要执行/start web实际上就是启动了应用容器，这是由heroku来做的事情。
+接下来通过我们之前做的是否制定了ip来判断，如果没有指定ip，那么，这个应用容器的ip就是跑起来的时候的docker分配的ip地址，通过
+<code>docker inspect --format '' $id</code>
+来查询。而port当Dockerfile中没有指定的时候，就默认是5000，如果制定了，就是指定的端口。启动应用容器也是很简单，加上-e PORT的参数，docker的其他参数，image我们也制定好了，$START_CMD也是，如果是buildstep的就是/start web，如果是dockerfile的，那么就是dockerfile中定义的entrypoint。这样就启动了应用容器。如果指定了ip，那么也是差不多的，只不过，容器的ip不再是docker分配的地址，启动的时候，参数照样加，不过端口指定为容器的5000端口，至于host主机暴露的端口是多少，我们可以通过<code>docker port $id container_ip</code>获得。而ip就是本机了。
+接着，做一个对部署的应用的检查，如果成功了，就可以使用新的容器了。
+使用新的容器，就要把原来的容器的id啊，ip啊，port啊之类的参数都修改了，那么再次有用户访问的时候，就是新的容器了。
+新的容器部署好了之后，还要把旧的容器给删除，<code>docker kill $oldid</code>就可以了。
++ url
+最后的时候，还做了一件事，就是，部署好了，怎么访问呢？或者说怎么告诉用户怎么访问呢？这就用到了<code>dokku url "$APP"</code>
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/url_zps7uw8gcug.png" alt="" />
+从这里可以看到，这个函数就是打印出了IP地址和端口号，也就是docker部署container的标准访问方式。</p>
 ]]></content>
   </entry>
   
@@ -62,7 +88,7 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#105;&#108;&#x74;&#111;&#58;&#103;&#105;&#116;&#64;&#103;&#105;&#116;&#46;&#99;&#111;&#x6d;">&#103;&#x69;&#x74;&#x40;&#103;&#x69;&#x74;&#x2e;&#99;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#x69;&#108;&#116;&#111;&#x3a;&#103;&#x69;&#116;&#64;&#103;&#105;&#x74;&#46;&#x63;&#111;&#x6d;">&#103;&#x69;&#116;&#64;&#103;&#x69;&#116;&#x2e;&#x63;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。
 <code>sudo service ssh stop</code>
 <code>sudo /usr/sbin/sshd -d</code>
@@ -241,6 +267,8 @@ dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如�
 <li>-r 是否可读</li>
 <li>-s 是否大小不为0</li>
 <li>-w 是否可写</li>
+<li>-z 如果后面的string长度为0</li>
+<li>-n 如果后面的string长度不为0</li>
 <li>-x 是否有执行权限
 <code>if [ -f /home/monkey/hello ]</code>
 <code>then</code>
