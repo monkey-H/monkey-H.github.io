@@ -100,7 +100,9 @@
   pluginhook并不是被大家普遍使用的一个项目，这是dokku的原作者自己提出，并且用在自己的项目，比如dokku中的一个子项目。那么，这个项目是不是就很难理解？其实不是，如果换个名字，大家估计就会很熟悉，hook。Git本身就有hook机制，其作用主要是，当某些重要时间发生时，Git以调用自定义的脚本。在Git中，有两组挂钩，客户端和服务器端的。客户端主要用于客户端的操作，像你在commit的时候，可能同时希望可以提交和合并等，但是对一个paas平台而言，关注的更多是服务器端的hook脚本。服务器端的hook Git脚本，通常被一些开发者用来做自动部署，也就是说，当用户通过客户端git push操作后，服务器端在收到这个commit之前，之后，都可以自动调用.git/hooks目录下的一些脚本文件，并执行。非常适合自动部署，在用户push之后，不需要再到服务器端，执行部署工作。hook脚本的作用就是这样，那么pluginhook又做了什么事情呢？pluginhook的项目代码很少，只有不到200行的go语言的代码。是一个比hook本身更好的plugin system。相对于hook脚本，pluginhook更关注plugin，什么意思呢？就是说，他把所有的hook脚本都集中在一个plugins的目录里，当然，这个目录也是特定的目录，这样，操作系统才知道怎么去找plugin的目录。同一个hook脚本，可以有多个plugin，调用的时候，这些plugin都会去执行。简单来说呢，pluginhook就是对hook进行了一层封装，把原本调用hook脚本的地方，用pluginhook来调用，如hook脚本调用<code>hooks/post-commit $REV $USER</code>可以用pluginhook这样调用<code>pluginhook post-commit $REV $USER</code>，pluginhook命令就是简单的把plugin目录下的所有路径都找一遍，这个路径是通过环境变量$PLUGIN_PATH来定义的，只要找到和命令相同的文件的名字，就把这个命令之后的参数都传给这个文件，让他执行。那么，用pluginhook和hook有什么区别呢？可以这么说，不用pluginhook，只用hook也是可以完全实现这些功能的。使用hook，一是为了方便，二是，每个我们需要处理的点，只能有一个hook脚本实现，这是dokku所不希望的事情，所以，才有了pluginhook的出现。
   关于pluginhook的实现的代码阅读，我们之后再补充。</p></li>
 <li><p>ssh
-  ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。<img src="/Users/monkey/Document/dokku/sshd-x" alt="" />，可以看到，dokku做了一件事情，他把所有的命令，都通过&#8220;这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。</p></li>
+  ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。
+  <img src="/Users/monkey/Documents/octopress/source/images/email.png" alt="email" />
+  可以看到，dokku做了一件事情，他把所有的命令，都通过&#8220;这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。</p></li>
 </ul>
 
 </div>
