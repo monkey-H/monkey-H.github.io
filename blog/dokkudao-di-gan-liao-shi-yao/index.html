@@ -101,7 +101,7 @@
   关于pluginhook的实现的代码阅读，我们之后再补充。</p></li>
 <li><p>ssh
   ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。
-  <img src="/Users/monkey/Documents/octopress/source/images/email.png" alt="email" />
+  <img src="../images/email.png" alt="email" />
   可以看到，dokku做了一件事情，他把所有的命令，都通过&#8220;这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。</p></li>
 </ul>
 
