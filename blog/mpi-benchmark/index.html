@@ -126,7 +126,7 @@ ok，这样nfs就配置完成了。</p>
 <code>sudo docker run -ti --slave2 --privileged=true hmonkey/openmpi14.04:v3 /bin/bash</code>
 这样就起来了三个节点，其中我们把其中的一个座位master，另外的两个座位slave。起来之后，要做两件事，第一，我忘记在image里面自动启动ssh服务，所以，起来之后，要首先把ssh服务启动起来，分别运行sudo service ssh start其次，要在master里面把slave的ip加到host列表里面去，这样才可以方便的访问。在master上vim /etc/hosts，把slave1和slave2的地址加上去。
 <img src="http://i1066.photobucket.com/albums/u407/5681713/coreos/host_zpslj6kzrht.png" alt="host" />
-这样，就配置好集群环境了。由于我们这里已经设置好ssh进去的时候不需要输入密码，这一步就可以省略了。关于如何配置不需要密码就可以直接ssh进去，请查看我别的<a href="">blog</a>。
+这样，就配置好集群环境了。由于我们这里已经设置好ssh进去的时候不需要输入密码，这一步就可以省略了。关于如何配置不需要密码就可以直接ssh进去，请查看我别的<a href="http://monkey-h.github.io/blog/ssh-image/">blog</a>。
 <code>cd /</code>
 <code>sudo mkdir nfs</code>
 <code>sudo mount ip:/home/monkey/nfs /nfs</code>
@@ -194,6 +194,10 @@ ok，这样nfs就配置完成了。</p>
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
+      </li>
     
       <li class="post">
         <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>

@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-06T17:05:04+08:00</updated>
+  <updated>2015-05-06T17:14:24+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -12,6 +12,17 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[在coreos系统下，同时添加flannel和私有仓库的参数]]></title>
+    <link href="http://monkey-h.github.io/blog/flannel-registry/"/>
+    <updated>2015-05-06T17:07:40+08:00</updated>
+    <id>http://monkey-h.github.io/blog/flannel-registry</id>
+    <content type="html"><![CDATA[<h2>#</h2>
+
+<p>明天再写</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[创建不需要输入密码就可以登录的docker Image]]></title>
@@ -89,7 +100,7 @@ ok，这样nfs就配置完成了。</p>
 <code>sudo docker run -ti --slave2 --privileged=true hmonkey/openmpi14.04:v3 /bin/bash</code>
 这样就起来了三个节点，其中我们把其中的一个座位master，另外的两个座位slave。起来之后，要做两件事，第一，我忘记在image里面自动启动ssh服务，所以，起来之后，要首先把ssh服务启动起来，分别运行sudo service ssh start其次，要在master里面把slave的ip加到host列表里面去，这样才可以方便的访问。在master上vim /etc/hosts，把slave1和slave2的地址加上去。
 <img src="http://i1066.photobucket.com/albums/u407/5681713/coreos/host_zpslj6kzrht.png" alt="host" />
-这样，就配置好集群环境了。由于我们这里已经设置好ssh进去的时候不需要输入密码，这一步就可以省略了。关于如何配置不需要密码就可以直接ssh进去，请查看我别的<a href="">blog</a>。
+这样，就配置好集群环境了。由于我们这里已经设置好ssh进去的时候不需要输入密码，这一步就可以省略了。关于如何配置不需要密码就可以直接ssh进去，请查看我别的<a href="http://monkey-h.github.io/blog/ssh-image/">blog</a>。
 <code>cd /</code>
 <code>sudo mkdir nfs</code>
 <code>sudo mount ip:/home/monkey/nfs /nfs</code>
@@ -534,7 +545,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#108;&#116;&#x6f;&#x3a;&#103;&#x69;&#116;&#64;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#x6d;">&#103;&#105;&#116;&#64;&#x67;&#105;&#116;&#46;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#x69;&#x6c;&#x74;&#111;&#58;&#x67;&#x69;&#116;&#x40;&#103;&#x69;&#x74;&#46;&#x63;&#x6f;&#109;">&#x67;&#105;&#116;&#x40;&#x67;&#x69;&#116;&#x2e;&#99;&#111;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。
 <code>sudo service ssh stop</code>
 <code>sudo /usr/sbin/sshd -d</code>
