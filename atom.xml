@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-06T16:53:15+08:00</updated>
+  <updated>2015-05-06T17:05:04+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -14,7 +14,36 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Mpi_benchmark]]></title>
+    <title type="html"><![CDATA[创建不需要输入密码就可以登录的docker Image]]></title>
+    <link href="http://monkey-h.github.io/blog/ssh-image/"/>
+    <updated>2015-05-06T16:55:39+08:00</updated>
+    <id>http://monkey-h.github.io/blog/ssh-image</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。</p>
+
+<!--more-->
+
+
+<p>而rsa的工作原理是什么样子的呢？简单说来，如果a想ssh到b上去，那么a就要把自己的rsa.pub发送给b，然后，b如果接受a以后可以无密码访问我，就把这个pub key加入到authorized_keys里面去，这样以后，在a想ssh到b的时候，a会把这个信息进行加密，通过a自身的private key，而a的这个加密信息只有a的pub key才能解开，这样，b在接收到这个信息的时候，因为b拥有a的pub key，所以就可以解开，同样地，b也就知道，这真是a发来的信息，因为别的人不知道a的private key，这样b就可以直接允许a ssh进来了。
+在docker环境中，我们比较方便的地方，是可以直接制作一个镜像。我们的想法是，用一个基础镜像构建一个container，然后在这个container里面生成rsa密钥，然后，把自己的pub key直接拷到authorized_keys里面去，然后把这个container做成一个镜像，这样的话，只要从这个镜像起来的container，都可以互相无密码访问。
+首先，要用docker启用一个container
+<code>sudo docker run -ti ubuntu /bin/bash</code>
+既然要使用ssh，那么我们肯定要安装ssh。
+<code>sudo apt-get install openssh-server</code>
+然后，生成密钥，并且赋值给authorized_keys
+<code>sshkey-gen -t rsa</code>
+一直按回车，不要停。
+<code>cp /root/.ssh/id_dsa.pub /root/.ssh/authorized_keys</code>
+修改一些配置信息，修改/etc/ssh/ssh_configure文件里面的StrictHostKeyChecking ask为 no，这个配置信息是在ssh主机的时候，询问加入fingerprint的那个东西。
+然后退出container，使用docker ps -l查看刚刚退出的container的id，然后用这个container commit一个镜像。
+<code>sudo docker commit container_id image_name</code>
+那么最终生成的那个image_name，就是我们设计出来的一个image，从这个image启动不同的container之后，在开启了ssh服务的情况下，是可以相互不输入密码ssh进去的。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[使用mtt作为mpi的benchmark 测试docker Container计算集群性能]]></title>
     <link href="http://monkey-h.github.io/blog/mpi-benchmark/"/>
     <updated>2015-05-06T16:31:43+08:00</updated>
     <id>http://monkey-h.github.io/blog/mpi-benchmark</id>
@@ -505,7 +534,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#105;&#108;&#x74;&#x6f;&#58;&#103;&#105;&#116;&#64;&#x67;&#105;&#116;&#x2e;&#99;&#x6f;&#x6d;">&#x67;&#105;&#x74;&#64;&#103;&#x69;&#116;&#x2e;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#108;&#116;&#x6f;&#x3a;&#103;&#x69;&#116;&#64;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#x6d;">&#103;&#105;&#116;&#64;&#x67;&#105;&#116;&#46;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。
 <code>sudo service ssh stop</code>
 <code>sudo /usr/sbin/sshd -d</code>
