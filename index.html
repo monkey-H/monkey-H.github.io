@@ -9,8 +9,7 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="vpn添加路由规则
-国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是，他是转发所有流量的，就是说，他不会做一个判断，所有的流量都通过他的VPN转发出去。比如访问个百度的网址， &hellip;">
+  <meta name="description" content="写在前面 关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -88,20 +87,16 @@
   </header>
 
 
-  <div class="entry-content"><ul>
-<li><p>vpn添加路由规则
-国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是，他是转发所有流量的，就是说，他不会做一个判断，所有的流量都通过他的VPN转发出去。比如访问个百度的网址，也是先转到国外他的vpn服务器，然后从那里转发出来，查找国内的百度服务器。这样会相当慢，当然了，也不是很慢，况且我们翻墙主要是为了访问国外的资源，国内基本不怎么访问，也就无所谓了。但是，有一些情况比较特殊，因为我经常要访问我们局域网内的服务器，这就比较麻烦了，因为你转发到国外的服务器上之后，再转发给国内的时候，是找不到我们局域网内的服务器的，这就需要添加一个路由规则，让所有有关访问局域网内的ip的请求，不走vpn，而是走我们局域网内的路由器就可以了。
-<code>sudo /sbin/route add -net 114.212 192.168.1.1</code>
-114.212是我们局域网的ip地址段，后面的192.168.1.1是路由器的ip地址。</p></li>
-<li><p>octopress rake gen_deploy报错
-搭建好的octopress，刚开始gen_deploy的时候可以push，但是后来重启了机器，就不可以了，报错
-<img src="http://i1066.photobucket.com/albums/u407/5681713/everything/octopress_zpsuen9rm2b.png" alt="" />
-经查证，好像是本地的rsa key没有加入到本地的钥匙中，添加进去就可以了。
-<code>ssh-add ~/.ssh/id_rsa</code></p></li>
-</ul>
+  <div class="entry-content"><h3>写在前面</h3>
+
+<p>关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。</p>
 
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/net-add/">继续阅读;</a>
+    </footer>
   
 
 
