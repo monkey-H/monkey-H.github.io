@@ -9,8 +9,8 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="# 明天再写
-">
+  <meta name="description" content="vpn添加路由规则
+国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是，他是转发所有流量的，就是说，他不会做一个判断，所有的流量都通过他的VPN转发出去。比如访问个百度的网址， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +66,46 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-07T14:56:51+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:56 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><ul>
+<li><p>vpn添加路由规则
+国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是，他是转发所有流量的，就是说，他不会做一个判断，所有的流量都通过他的VPN转发出去。比如访问个百度的网址，也是先转到国外他的vpn服务器，然后从那里转发出来，查找国内的百度服务器。这样会相当慢，当然了，也不是很慢，况且我们翻墙主要是为了访问国外的资源，国内基本不怎么访问，也就无所谓了。但是，有一些情况比较特殊，因为我经常要访问我们局域网内的服务器，这就比较麻烦了，因为你转发到国外的服务器上之后，再转发给国内的时候，是找不到我们局域网内的服务器的，这就需要添加一个路由规则，让所有有关访问局域网内的ip的请求，不走vpn，而是走我们局域网内的路由器就可以了。
+<code>sudo /sbin/route add -net 114.212 192.168.1.1</code>
+114.212是我们局域网的ip地址段，后面的192.168.1.1是路由器的ip地址。</p></li>
+<li><p>octopress rake gen_deploy报错
+搭建好的octopress，刚开始gen_deploy的时候可以push，但是后来重启了机器，就不可以了，报错
+<img src="" alt="" />
+经查证，好像是本地的rsa key没有加入到本地的钥匙中，添加进去就可以了。
+<code>ssh-add ~/.ssh/id_rsa</code></p></li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -386,42 +426,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/bash-trick/">Bash 脚本语言学习收获</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-04-29T19:12:01+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:12 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/bash-trick/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -435,6 +439,10 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a>
+      </li>
     
       <li class="post">
         <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
