@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-07T17:34:22+08:00</updated>
+  <updated>2015-05-07T17:37:24+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -637,9 +637,11 @@ docker0也已经是我们指定的ip了。</p>
 </span><span class='line'>sudo vi static.network</span></code></pre></td></tr></table></div></figure>
 
 
-<p>编辑static.network如下所示。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/staticnetwork_zps6zii1usf.png" alt="staticnetwork" />
-注意，Name后面的eno1应该是上一步ifconfig出来的网卡的名称，Address后面的ip地址应该是你要分配的你的子网内的ip地址，网关也是对应的网关，DNS也是你自己的DNS解析器，当然，如果没有，可以不写。
+<p>编辑static.network如下所示。</p>
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/staticnetwork_zps6zii1usf.png" alt="staticnetwork" /></p>
+
+<p>注意，Name后面的eno1应该是上一步ifconfig出来的网卡的名称，Address后面的ip地址应该是你要分配的你的子网内的ip地址，网关也是对应的网关，DNS也是你自己的DNS解析器，当然，如果没有，可以不写。
 接下来，使得网络生效。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -980,7 +982,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#x61;&#105;&#x6c;&#x74;&#111;&#x3a;&#x67;&#105;&#116;&#x40;&#103;&#x69;&#116;&#x2e;&#99;&#x6f;&#x6d;">&#103;&#105;&#116;&#64;&#103;&#105;&#x74;&#46;&#99;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#x6c;&#116;&#111;&#x3a;&#x67;&#105;&#116;&#x40;&#103;&#105;&#x74;&#46;&#x63;&#111;&#x6d;">&#x67;&#105;&#x74;&#64;&#103;&#105;&#x74;&#x2e;&#99;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
