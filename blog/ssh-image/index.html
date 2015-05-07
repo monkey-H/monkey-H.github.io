@@ -93,18 +93,38 @@
 
 <p>而rsa的工作原理是什么样子的呢？简单说来，如果a想ssh到b上去，那么a就要把自己的rsa.pub发送给b，然后，b如果接受a以后可以无密码访问我，就把这个pub key加入到authorized_keys里面去，这样以后，在a想ssh到b的时候，a会把这个信息进行加密，通过a自身的private key，而a的这个加密信息只有a的pub key才能解开，这样，b在接收到这个信息的时候，因为b拥有a的pub key，所以就可以解开，同样地，b也就知道，这真是a发来的信息，因为别的人不知道a的private key，这样b就可以直接允许a ssh进来了。
 在docker环境中，我们比较方便的地方，是可以直接制作一个镜像。我们的想法是，用一个基础镜像构建一个container，然后在这个container里面生成rsa密钥，然后，把自己的pub key直接拷到authorized_keys里面去，然后把这个container做成一个镜像，这样的话，只要从这个镜像起来的container，都可以互相无密码访问。
-首先，要用docker启用一个container
-<code>sudo docker run -ti ubuntu /bin/bash</code>
-既然要使用ssh，那么我们肯定要安装ssh。
-<code>sudo apt-get install openssh-server</code>
-然后，生成密钥，并且赋值给authorized_keys
-<code>sshkey-gen -t rsa</code>
-一直按回车，不要停。
-<code>cp /root/.ssh/id_dsa.pub /root/.ssh/authorized_keys</code>
-修改一些配置信息，修改/etc/ssh/ssh_configure文件里面的StrictHostKeyChecking ask为 no，这个配置信息是在ssh主机的时候，询问加入fingerprint的那个东西。
-然后退出container，使用docker ps -l查看刚刚退出的container的id，然后用这个container commit一个镜像。
-<code>sudo docker commit container_id image_name</code>
-那么最终生成的那个image_name，就是我们设计出来的一个image，从这个image启动不同的container之后，在开启了ssh服务的情况下，是可以相互不输入密码ssh进去的。</p>
+首先，要用docker启用一个container</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo docker run -ti ubuntu /bin/bash</span></code></pre></td></tr></table></div></figure>
+
+
+<p>既然要使用ssh，那么我们肯定要安装ssh。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo apt-get install openssh-server</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后，生成密钥，并且赋值给authorized_keys</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sshkey-gen -t rsa</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一直按回车，不要停。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cp /root/.ssh/id_dsa.pub /root/.ssh/authorized_keys</span></code></pre></td></tr></table></div></figure>
+
+
+<p>修改一些配置信息，修改/etc/ssh/ssh_configure文件里面的StrictHostKeyChecking ask为 no，这个配置信息是在ssh主机的时候，询问加入fingerprint的那个东西。
+然后退出container，使用docker ps -l查看刚刚退出的container的id，然后用这个container commit一个镜像。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo docker commit container_id image_name</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么最终生成的那个image_name，就是我们设计出来的一个image，从这个image启动不同的container之后，在开启了ssh服务的情况下，是可以相互不输入密码ssh进去的。</p>
 </div>
 
 
@@ -137,10 +157,10 @@
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/mpi-benchmark/" title="Previous Post: 使用mtt作为mpi的benchmark 测试docker container计算集群性能">&laquo; 使用mtt作为mpi的benchmark 测试docker container计算集群性能</a>
+        <a class="basic-alignment left" href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/" title="Previous Post: 使用vagrant搭建coreos集群安装flannel服务并使用mpi测试">&laquo; 使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
       
       
-        <a class="basic-alignment right" href="/blog/flannel-registry/" title="Next Post: 在coreos系统下，同时添加flannel和私有仓库的参数">在coreos系统下，同时添加flannel和私有仓库的参数 &raquo;</a>
+        <a class="basic-alignment right" href="/blog/net-add/" title="Next Post: vpn添加路由规则+octopress push报错">vpn添加路由规则+octopress push报错 &raquo;</a>
       
     </p>
   </footer>
@@ -159,39 +179,11 @@
       </li>
     
       <li class="post">
-        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
-      </li>
-    
-      <li class="post">
         <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
       </li>
     
       <li class="post">
-        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
-      </li>
-    
-      <li class="post">
         <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
       </li>
     
       <li class="post">

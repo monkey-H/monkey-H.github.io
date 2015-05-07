@@ -107,42 +107,6 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T17:07:40+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:07 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>前面我们已经搭建好了一个coreos集群 <a href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/">看这里</a>，正如这篇blog里面说的一样，我们没有外网，所以我们自己搭建了一个私有仓库，方法可以去官网找，很简答的两行命令，这里就不再叙述。既然搭建了私服，我们就希望我们的这个集群使用这个集群。其次，我们搭建了一个集群，我们也希望屏蔽这是一个集群的概念，让用户用起来就像在使用一个主机的服务器一样，所以我们需要<a href="github.com/coreos/flannel">flanel</a>服务。这就涉及到给docker daemon添加多个参数，我们这里记录一下过程。同时，这也是如果在coreos集群中如何运行service的介绍。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/flannel-registry/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
       <h1 class="entry-title"><a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a></h1>
     
     
@@ -168,42 +132,6 @@
   
     <footer>
       <a rel="full-article" href="/blog/ssh-image/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T16:31:43+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:31 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>docker技术已经十分普遍，利用docker来创建多个虚拟机，实现分布式运算也是一种十分便利的方式，但是docker创建的虚拟机和常规的虚拟机，或者和分布式的集群到底有多少性能的差距，docker能不能通过创建多个container的方式实现常规的分布式运算，我们这里使用openmpi的一个benchmark，mtt来做一个验证。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/mpi-benchmark/">继续阅读;</a>
     </footer>
   
 
@@ -251,7 +179,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a></h1>
+      <h1 class="entry-title"><a href="/blog/bash-trick/">Bash 脚本语言学习收获</a></h1>
     
     
       <p class="meta">
@@ -260,7 +188,7 @@
 
 
 
-<time class='entry-date' datetime='2015-05-06T09:54:34+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:54 am</span></time>
+<time class='entry-date' datetime='2015-04-29T19:12:01+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:12 pm</span></time>
         
       </p>
     
@@ -269,13 +197,13 @@
 
   <div class="entry-content"><h3>写在前面</h3>
 
-<p>最近要搭建一个coreos集群，但是实验环境中没有外网，这样就不能使用官网的安装方法，整合了一些大牛的安装经验，加上我自己的安装实践，这里做个记录，希望大家可以少踩一些坑。</p>
+<p>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。</p>
 
 </div>
   
   
     <footer>
-      <a rel="full-article" href="/blog/coreoschi-xian-an-zhuang/">继续阅读;</a>
+      <a rel="full-article" href="/blog/bash-trick/">继续阅读;</a>
     </footer>
   
 
@@ -287,7 +215,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a></h1>
+      <h1 class="entry-title"><a href="/blog/hello-world/">Hello World</a></h1>
     
     
       <p class="meta">
@@ -296,139 +224,22 @@
 
 
 
-<time class='entry-date' datetime='2015-05-05T19:50:07+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:50 pm</span></time>
+<time class='entry-date' datetime='2015-04-28T17:46:50+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:46 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
+  <div class="entry-content"><p><code>hello! world</code></p>
 </div>
   
-  
-    <footer>
-      <a rel="full-article" href="/blog/dokkuyuan-ma-jie-du-si/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-04T18:48:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:48 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/dokkuyuan-ma-jie-du-san/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-04T17:03:52+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:03 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-01T09:05:19+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2015</span></span> <span class='time'>9:05 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/dokkudao-di-gan-liao-shi-yao/">继续阅读;</a>
-    </footer>
   
 
 
     </article>
   
   <div class="pagination">
-    
-      <a class="prev" href="/posts/2">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -445,39 +256,11 @@
       </li>
     
       <li class="post">
-        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
-      </li>
-    
-      <li class="post">
         <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
       </li>
     
       <li class="post">
-        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
-      </li>
-    
-      <li class="post">
         <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
       </li>
     
       <li class="post">
