@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-07T17:32:03+08:00</updated>
+  <updated>2015-05-07T17:32:50+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -37,6 +37,209 @@
 <code>ssh-add ~/.ssh/id_rsa</code></p></li>
 </ul>
 
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[在coreos系统下，同时添加flannel和私有仓库的参数]]></title>
+    <link href="http://monkey-h.github.io/blog/flannel-registry/"/>
+    <updated>2015-05-06T17:07:40+08:00</updated>
+    <id>http://monkey-h.github.io/blog/flannel-registry</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>前面我们已经搭建好了一个coreos集群 <a href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/">看这里</a>，正如这篇blog里面说的一样，我们没有外网，所以我们自己搭建了一个私有仓库，方法可以去官网找，很简答的两行命令，这里就不再叙述。既然搭建了私服，我们就希望我们的这个集群使用这个集群。其次，我们搭建了一个集群，我们也希望屏蔽这是一个集群的概念，让用户用起来就像在使用一个主机的服务器一样，所以我们需要<a href="github.com/coreos/flannel">flanel</a>服务。这就涉及到给docker daemon添加多个参数，我们这里记录一下过程。同时，这也是如果在coreos集群中如何运行service的介绍。</p>
+
+<!--more-->
+
+
+<h4>添加私服参数</h4>
+
+<p>我们的服务器是没有外网的，所以，从docker hub上下载一个镜像都是问题，所以我们搭建了一个私有的docker registry。关于docker registry的东西，其实也是很有意思的，如果以后有机会，我们还会写一篇文章来介绍docker registry。我们现在的方式是，自己建立一个私服，然后从可以连接外网的地方下载一些image，然后上传到私服，这样，就可以直接从我们的私服上下载了，而且速度相当快。因为是局域网内，而且没有经过国防网。
+系统默认的docker.service在</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/usr/lib64/systemd/system/docker.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>里面，但是这个路径下的文件是可读不可写的，所以我们要把他移动到一个可读可写的地方。不只是docker.service，只要是unit files都要在这个路径</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/etc/systemd/system</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所以，第一步，拷贝一份docker.service。并编辑。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo cp /usr/lib64/systemd/system/docker.service /etc/systemd/system/
+</span><span class='line'>cd /etc/systemd/system
+</span><span class='line'>sudo vim docker.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>把其中的这句话</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ExecStart=/usr/lib/coreos/dockerd --daemon --host=fd:// $DOCKER_OPTS -- $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ</span></code></pre></td></tr></table></div></figure>
+
+
+<p>改成</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ExecStart=/usr/lib/coreos/dockerd --daemon --host=fd:// $DOCKER_OPTS --insecure-registry docker.iwanna.xyz:5000 $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ</span></code></pre></td></tr></table></div></figure>
+
+
+<p>加的那个参数，就是告诉本机，这个地址的私有仓库可以不走https协议，要不然在pull image的时候会报错。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/insecure_zpsjexwxehm.png" alt="insecure" />
+接下来，我们要让这个service生效，然后启动。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl stop docker.service
+</span><span class='line'>sudo systemctl enable /etc/systemd/system/docker.service
+</span><span class='line'>sudo systemctl daemon-reload
+</span><span class='line'>sudo systemctl start docker.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>接下来就可以pull私有仓库里可以编译flannel的image了。在docker hub里面，叫做google/golang是一个支持go语言的image，我在上传到私有仓库的时候，为了名字好记，重新命名了，实际上就是这个image。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/pull_zpsihbxjfxl.png" alt="pull" /></p>
+
+<h4>安装flannel</h4>
+
+<p>现在我们已经从私服上下载下来了编译flannel的image，现在我们需要flannel的源码，由于我们这里不能使用外网，所以，还是通过tomcat的方式下载，如果可以使用外网，可以直接使用git clone来下载</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git clone https://github.com/coreos/flannel.git</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们这里是从tomcat服务器上下载的。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/wget_zpswmf12hii.png" alt="wget" />
+接下来，解压，移动到/opt目录，为什么这么做，是为了防止以后误删。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>tar -zxf flannel.tar.gz
+</span><span class='line'>sudo mkdir /opt
+</span><span class='line'>sudo mv flannel/* /opt
+</span><span class='line'>cd /opt</span></code></pre></td></tr></table></div></figure>
+
+
+<p>好了，现在可以编译了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>docker run -v /opt:/opt/flannel -ti docker.iwanna.xyz:5000/hmonkey/flannel /bin/bash -c "cd /opt/flannel && ./build"</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/building_zps5vlcndnc.png" alt="building" />
+接下来，我们就要创建flannel服务了。
+进入到我们的unit files目录。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/systemd/system
+</span><span class='line'>sudo touch flannel.service
+</span><span class='line'>sudo vim flannel.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在里面写入这样的代码。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
+</span><span class='line'>Description=flannel
+</span><span class='line'>Requires=etcd.service
+</span><span class='line'>After=etcd.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>ExecStartPre=-/usr/bin/etcdctl mk /coreos.com/network/config '{"Network":"10.0.0.0/16"}'
+</span><span class='line'>ExecStart=/opt/bin/flanneld
+</span><span class='line'>
+</span><span class='line'>[Install]
+</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后，启动这个服务。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl enable flannel.service
+</span><span class='line'>sudo systemctl start flannel.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以查看状态，如果是这样，就说明成功了。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/status_zpsk02mrnhs.png" alt="status" />
+接下来，停掉docker.service，删除网桥docker0，让docker0使用flannel的网桥，然后修改docker.service，重启docker。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>source /run/flannel/subnet.env
+</span><span class='line'>sudo systemctl stop docker.service
+</span><span class='line'>sudo ifconfig docker0 ${FLANNEL_SUBNET}
+</span><span class='line'>sudo vim docker.service
+</span><span class='line'>sudo systemctl daemon-reload
+</span><span class='line'>sudo systemctl start docker.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>编辑docker.service的时候，使得最后，docker.service看起来是这个样子的。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
+</span><span class='line'>Description=Docker Application Container Engine
+</span><span class='line'>Documentation=http://docs.docker.com
+</span><span class='line'>After=docker.socket early-docker.target network.target
+</span><span class='line'>Requires=docker.socket early-docker.target
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>Environment=TMPDIR=/var/tmp
+</span><span class='line'>EnvironmentFile=-/run/flannel/subnet.env
+</span><span class='line'>MountFlags=slave
+</span><span class='line'>LimitNOFILE=1048576
+</span><span class='line'>LimitNPROC=1048576
+</span><span class='line'>ExecStart=/usr/lib/coreos/dockerd --insecure-registry docker.iwanna.xyz:5000 --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} --daemon --host=fd://
+</span><span class='line'>
+</span><span class='line'>[Install]
+</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
+
+
+<p>好了，大功告成，验证一下。
+我们在coreos3上随便跑一个container，可以看到，他的ip是我们之前用flannel获得的。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/try_zpsdxnqxstq.png" alt="try" />
+然后我们在coreos1上，ping这个ip，可以看到，完全可以ping通。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/ping_zpsfvnfwq69.png" alt="ping" />
+同样的，简单学习一下systemd的语法，就可以让我们开启不同的service，如果这些service中有涉及到有可能修改docker daemon的参数的，就可以通过上面这个例子进行修改。</p>
 ]]></content>
   </entry>
   
@@ -281,6 +484,508 @@ docker0也已经是我们指定的ip了。</p>
 <p>大功告成，结果如下
 <img src="http://i1066.photobucket.com/albums/u407/5681713/coreos/mpi_zps1vidqse2.png" alt="" />
 要注意的是，我的mpi镜像忘记默认启动ssh服务了。如果运行mpi应用的时候包connect refused，把ssh服务打开就可以了</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Coreos集群离线安装]]></title>
+    <link href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/"/>
+    <updated>2015-05-06T09:54:34+08:00</updated>
+    <id>http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>最近要搭建一个coreos集群，但是实验环境中没有外网，这样就不能使用官网的安装方法，整合了一些大牛的安装经验，加上我自己的安装实践，这里做个记录，希望大家可以少踩一些坑。</p>
+
+<!--more-->
+
+
+<h4>刻录安装盘</h4>
+
+<p>官网给的coreos的镜像是一个iso文件，我们需要把他刻成安装盘，中文的大白菜，比较好的UltroISO都可以，我一般都是用后者，不会用大白菜，但是据很多装系统的人描述，大白菜好像挺简单的。
+我是在服务器上安装的，他自带一个iDRAC虚拟控制台，可以直接从iso安装，就省略了刻盘的过程。</p>
+
+<h4>启动服务器</h4>
+
+<p>如果用的iso安装盘，直接从U盘启动，就可以进入到一个系统，如果从iDRAC虚拟控制台，从虚拟CD DVD ISO启动，就可以进入到一个预安装系统，这个系统是用来帮助你安装系统的，这个时候，系统并没有安装到你的服务器上。</p>
+
+<h4>配置临时ip地址</h4>
+
+<p>由于我们没有外网，所以我们需要在本地局域网开一个tomcat服务器，从这个tomcat服务器里面下载我们需要的东西，那么为了可以获得这个tomcat服务器的东西，我们就需要给这台机器临时分配一个内网ip。
+首先，我们先看看我们都有几个网卡。使用<code>ifconfig | less</code>命令。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/ifconfig_zps44mqiukv.png" alt="ifconfig" />
+从上图中我们可以看到，我这台服务器上有两个网卡，我们就使用eno1来分配ip。
+进入到/etc/systemd/network目录，分配内网ip。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/systemd/network
+</span><span class='line'>sudo vi static.network</span></code></pre></td></tr></table></div></figure>
+
+
+<p>编辑static.network如下所示。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/staticnetwork_zps6zii1usf.png" alt="staticnetwork" />
+注意，Name后面的eno1应该是上一步ifconfig出来的网卡的名称，Address后面的ip地址应该是你要分配的你的子网内的ip地址，网关也是对应的网关，DNS也是你自己的DNS解析器，当然，如果没有，可以不写。
+接下来，使得网络生效。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl restart systemd-networkd</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以通过ping你的tomcat服务器来看看是否设置成功。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/ping_zpshqq6duxh.png" alt="tomcat" /></p>
+
+<h4>配置tomcat服务器和上传安装脚本，配置文件</h4>
+
+<p>配置tomcat服务器的教材有很多，我们这里就不再描述了，可以随便google一个，然后配置好。我们这里要讲的就是coreos的安装脚本和配置文件。
+<a href="https://raw.githubusercontent.com/coreos/init/master/bin/coreos-install">https://raw.githubusercontent.com/coreos/init/master/bin/coreos-install</a>这个是官网给的安装脚本，首先我们要把他下载下来，然后，把他放在刚刚配置的tomcat路径下，tomcat/webapps/ROOT路径下。然后修改其中的一些内容。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/coreos-install_zpshx5fw1ft.png" alt="install" />
+这里的ip要配置成你本机的ip，并且是可以被服务器连接到的ip。理解起来也很简单，就是把去网上要下载的东西，都从本机下载。那么很明显，我们也要把他要下载的东西，也预先下载下来，放在ROOT目录下。有两个东西，一个是镜像，也就是要安装的东西，一个是签名，是用来检测下载的镜像有没有破损之类的。（我们这里下载的是607版本的，现在应该有更新了）
+镜像地址：<a href="http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2">http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2</a>
+签名地址：<a href="http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2.sig">http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2.sig</a>
+除了这个东西，还有一个配置文件，叫做cloud-config.yaml。这个文件是安装coreos系统必不可少的文件。我们这里默认要装的东西不多，所以cloud-config.yaml文件就简单了很多，如下。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#cloud-config
+</span><span class='line'>  
+</span><span class='line'>hostname: coreos1
+</span><span class='line'>  
+</span><span class='line'>coreos:    
+</span><span class='line'>  etcd:      
+</span><span class='line'>    peers: 114.212.189.136:7001
+</span><span class='line'>    addr: 114.212.189.136:4001  
+</span><span class='line'>    peer-addr: 114.212.189.136:7001  
+</span><span class='line'>  units:  
+</span><span class='line'>    - name: etcd.service  
+</span><span class='line'>      command: start  
+</span><span class='line'>    - name: fleet.service  
+</span><span class='line'>      command: start  
+</span><span class='line'>    - name: static.network  
+</span><span class='line'>      content: |  
+</span><span class='line'>        [Match]  
+</span><span class='line'>        Name=eno1
+</span><span class='line'>  
+</span><span class='line'>        [Network]  
+</span><span class='line'>        Address=114.212.189.136/24  
+</span><span class='line'>        Gateway=114.212.189.1
+</span><span class='line'>      DNS=202.119.32.6
+</span><span class='line'>users:    
+</span><span class='line'>  - name: core  
+</span><span class='line'>    ssh-authorized-keys:   
+</span><span class='line'>      - ssh-rsa #你的rsa key
+</span><span class='line'>  - groups:  
+</span><span class='line'>      - sudo  
+</span><span class='line'>      - docker </span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#cloud-config
+</span><span class='line'>  
+</span><span class='line'>hostname: coreos2
+</span><span class='line'>  
+</span><span class='line'>coreos:    
+</span><span class='line'>  etcd:      
+</span><span class='line'>    peers: 114.212.189.136:7001
+</span><span class='line'>    addr: 114.212.189.143:4001  
+</span><span class='line'>    peer-addr: 114.212.189.143:7001  
+</span><span class='line'>  units:  
+</span><span class='line'>    - name: etcd.service  
+</span><span class='line'>      command: start  
+</span><span class='line'>    - name: fleet.service  
+</span><span class='line'>      command: start  
+</span><span class='line'>    - name: static.network  
+</span><span class='line'>      content: |  
+</span><span class='line'>        [Match]  
+</span><span class='line'>        Name=eno1
+</span><span class='line'>  
+</span><span class='line'>        [Network]  
+</span><span class='line'>        Address=114.212.189.143/24  
+</span><span class='line'>        Gateway=114.212.189.1
+</span><span class='line'>        DNS=202.119.32.6
+</span><span class='line'>users:    
+</span><span class='line'>  - name: core  
+</span><span class='line'>    ssh-authorized-keys:   
+</span><span class='line'>      - ssh-rsa #你的rsa key
+</span><span class='line'>  - groups:  
+</span><span class='line'>      - sudo  
+</span><span class='line'>      - docker </span></code></pre></td></tr></table></div></figure>
+
+
+<p>这是两个服务器的cloud-config.yaml文件的比较，对比一下就很明显了。要修改的地方如下。
++ hostname 看你心情怎么命名，但是每个最好不一样。
++ peers 这个是etcd服务建立集群用来发现新机器的，除了第一台服务器安装的时候，是自己的ip，其余的都要使用集群中已经存在的某一个主机的ip。
++ addr 本机的ip和默认用来配对的4001端口
++ peer-addr 本机的ip和默认的用来配对的7001端口
++ Address 本机ip，前面的addr就是根据这个设置的，两个要一致。
++ Gateway 网关。你的局域网的网关
++ DNS 域名服务器，如果没有，可以不设置
++ ssh-rsa rsa密钥，启动服务器后，不能使用密码登陆，一般都是使用rsa密钥对来登陆，所以，这里要配置。至于rsa怎么产生，你可以在一个ubuntu系统上ssh-keygen命令参数，然后把~/.ssh/id_rsa.pub拷贝过来就是了。然后，你就可以从这个ubuntu系统登陆服务器，如果想从别的系统登陆，只要把那个系统的id_rsa.pub拷到服务器的authorized_keys里面就可以了。
++ 要注意，推荐你直接复制我拷上去的命令，因为cloud-config.yaml文件很特殊，他的语法很奇怪，比如DNS前面不是tab，而是8个空格等，如果这些你用的不对，就很容易出错。</p>
+
+<h4>下载安装脚本和配置文件，并安装</h4>
+
+<p>准备就绪，可以安装了。在服务器上下载需要的安装脚本和配置文件。并给安装脚本赋予权限。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd ~
+</span><span class='line'>wget 172.28.11.65:8080/coreos-install
+</span><span class='line'>chmod +x coreos-install
+</span><span class='line'>wget 172.28.11.65:8080/cloud-config143.yaml</span></code></pre></td></tr></table></div></figure>
+
+
+<p>注意这里的cloud-config143.yaml就是我们上一步提到的，不同的机器对应的不同的cloud-config文件。
+安装</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo ./coreos-install -d /dev/sda -C stable -c cloud-config143.yaml</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/success_zps7auwgjzn.png" alt="sucess" />
+出现这个界面就说明成功了，然后重启就可以了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo reboot</span></code></pre></td></tr></table></div></figure>
+
+
+<p>重启好了之后，你可以从你刚刚那个ubuntu系统ssh进去了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ssh core@114.212.189.143</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/login_zpssxrdse5c.png" alt="login" />
+同样的，使用基本相同的步骤，不同的cloud-config.yaml文件，配置其余的机器，配置完成后，在其中的一台机器上，查看集群中有哪些机器。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>fleetctl list-machines</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/listmachines_zpskqtipnkp.png" alt="" /></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dokku源码解读四]]></title>
+    <link href="http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-si/"/>
+    <updated>2015-05-05T19:50:07+08:00</updated>
+    <id>http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-si</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
+
+<!--more-->
+
+
+<h3>dokku服务器端操作</h3>
+
+<p>在dokku搭建的dokku平台上，有如下一些基本命令。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/help_zpsawheqycp.png" alt="" />
+在前面我们已经介绍过了，如果在dokku源码文件里找不到对应的case命令，就会去plugins/**/command里面去找。对这些命令而言，在这些目录下都是可以找到的，而且代码的可读性很强，我们这里就不再一个一个介绍，找几个比较有意思的，常用的命令介绍一下。</p>
+
+<ul>
+<li>apps:create <app>
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/create_zpsuwx8dj6q.png" alt="" />
+第一个判断语句是在用户没有指定创造的应用的名字的时候的提示语句。
+第二个判断语句是在已经存在指定名字的应用的时候的提示语句。
+创造的过程就是在$DOKKU_ROOT路径下建造了一个$APP的文件夹，就创建完成了，是不是和我们想象中的不一样？也就是说，dokku的apps:create并不是创建了一个应用，而只是创建了一个文件夹而已，如果你想创建应用容器，还是需要用docker run来做。</li>
+<li>apps:destroy <app>
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/destroy_zpsqccw8iun.png" alt="" />
+和create不同的是，删除就是真正的删除了，除了我最后圈出来的那两个停止容器，和删除容器的操作之外，前面还有很多准备工作，比如，用箭头指出来的，和<a href="deis.com">deis</a>很像的一个防止用户误删的判断操作，和支持强制删除等操作。值得注意的是，在最后，dokku还删除了对应的image，用来由于部署的应用过多，从而空间不够的情况，当然了，这种情况可能会导致上传之前已经部署过的一个应用，需要重新制作镜像的情况，可能会花费的时间多一些，但是，瑕不掩瑜。</li>
+<li>backup:export [file]
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/backup_zps9ctf2nbl.png" alt="" />
+这里我们要注意到一件事情，就是这里实际是调用了<code>pluginhook backup-export 1 $BACKUP_DIR</code>，要注意的是，我们从整个源码的目录结构里面可以看到，有很多backup-export文件，pluginhook的一个机制是，当有很多相同名字的插件的时候，他会把所有的插件都执行一遍，这样才是dokku的需求，可以把很多需要备份的东西，在不同的地方写上，而不会产生冲突，这也是让dokku发展pluginhook的一个很大的需求点，要不然，dokku很有可能会直接采用hook机制实现这些东西。</li>
+<li>ls
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/ls_zpszlg1xjln.png" alt="" />
+可以看到，dokku查找所有应用容器的方式相当简单，因为每次创建一个容器，他都会在$DOKKU_ROOT目录下创建一个对应的文件夹，所以，只要读取这个文件夹就可以了，没有用到docker的那一套，简单多了。</li>
+<li>run
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/run_zpsi0vbhyap.png" alt="" />
+这个run我们可以看到，应该是在create之后做的事情，这个run的前提是$DOKKU_ROOT目录下，已经存在了需要run的应用的目录，包括里面应有的文件。</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dokku源码解读三]]></title>
+    <link href="http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-san/"/>
+    <updated>2015-05-04T18:48:02+08:00</updated>
+    <id>http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-san</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
+
+<!--more-->
+
+
+<h3>dokku文件源码解读</h3>
+
+<p>上一节说到执行dokku receive $APP，找到文件中对应的代码
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-receive_zpsg2szjbzf.png" alt="dokku-receive.png" />
+其实，在执行这段代码之前，还有一些命令要执行，这些命令是主要是一些准备工作，包括环境变量的设置，插件的安装激活，还有原始命令的执行。
+在receive的case里面，主要做了四件事情，包括cleanup，build，release和deploy。
++ cleanup主要有两行命令组成，第一行，是删除paas平台中，状态为推出的container，可以看到，他是直接通过docker的命令执行的。关于docker，如果没有接触过的话，可以看看<a href="docker.com" title="docker 官网">这里</a>。第二行命令，是删除一些没有打标签的image，这些image一般是在生成新的image的过程中产生的临时文件。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-cleanup_zpsqkmhu8qc.png" alt="dokku-cleanup.png" />
++ build是用来产生要部署的程序的image的。build和release的case在plugins/00_dokku-standard/command里面可以找到。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-build_zpso6pqkn0n.png" alt="dokku-build.png" />
+dokku支持两种部署应用的方式，一种是heroku的标准格式，另外一种是dockerfile的格式，我们可以从代码的两个case中看到。我们先看简单的，dockerfile更加简单一些。
+dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如果有，取出想要暴露的端口，并通过dokku config:set-norestart命令，设置成对应程序的环境变量。dokku config:set-norestart命令我们之后再解释。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>pluginhook pre-build-dockerfile "$APP"
+</span><span class='line'>pluginhook post-build-dockerfile "$APP"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这两个插件在后来的更新中都去除了，所以，这两句不会执行。
+还有一句<code>docker build -t .</code>这个是docker的标准的从当前路径，查找Dockerfile，生成image的语法，这样就生成了一个用来部署应用的image。
+除了dockerfile的case，还有一个buildstep的case。在我们安装dokku这个paas平台的时候，就在makefile里面做了一个特殊的image
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/buildstep_zpsdvkmpj8u.png" alt="buildstep.png" />
+这个image是安装了heroku标准解释程序的image。而我们后来上传的按照heroku标准写的应用程序，就是通过这个东西来执行的。在dokku文件里，</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>export DOKKU_IMAGE=${DOKKU_IMAGE:="progrium/buildstep"}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>也就是在这个case里面的$DOKKU_IMAGE，实际上就是之前做的那个image，前面的几行是利用这个可以解释标准heroku的image跑一个container，然后在里面解压需要部署的应用，也就是相当于把应用拷贝进去，之后，commit成一个镜像。中间的几行，查看是否有一些container在启动的过程中的特殊的参数，加上去，执行build，heroku就是通过这个东西来部署应用。部署好了之后，commit成一个镜像。最后一部分，是一些build之后的处理，但是在后来的版本这些东西已经取消了。
++ release部分。和build类似，release也是有两个部分，dockerfile和buildstep。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-release_zpss2dcay6b.png" alt="dokku-release.png" />
+dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平台的一些参数设置导入到了container之中，具体是什么参数，我们可以看到
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/env_zpsjkxrnn0s.png" alt="" />
+主要是等待时间等。这里面的<code>if [[ -f "$DOKKU_ROOT/ENV" ]]</code>是去判断是否存在这个文件，关于if和文件的组合判断，可以去看我的另外一篇blog里面介绍的东西。<a href="http://monkey-h.github.io/blog/bash-trick/" title="bash trick">点击这里</a>
++ deploy部分
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-deploy_zpsbofppa5l.png" alt="deploy" />
+在deploy的开始阶段，首先执行了<code>pluginhook pre-build $APP</code>这段代码调用了plugin的一个插件，pre-build，这个插件可以在plugins/build-env/pre-build中找到
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/pre-build_zpsktyjirfr.png" alt="pre-build" />
+这个插件的作用也是十分明显的，第一，把原来build阶段的环境变量设置成应用的变量（大部分还是一些等待时间等变量），第二，把所有的build阶段的参数，都累加起来，再启动一个容器，把这些变量添加到这个容器中，然后把这个容器commit成一个image，让接下来的启动都从这个image中启动。
+接下来，就需要启动这个app了。首先判断是否已经起了一个这样的应用，如果已经启动了，那么我们就需要知道已经启动的这个容器的id是多少。由于我们在每次部署应用的时候，都会把他的id设置到$DOKKU_ROOOT/$APP/CONTAINER里面去，所以，直接读出来这个东西就ok了。为什么要知道这个id，是由于我们后面要把旧的container杀死，所以必须知道。接下来，DOCKER_ARGS参数已经在后来的版本中取消了，不用看了。要注意，我们执行了这么一句话。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>BIND_EXTERNAL=$(pluginhook bind-external-ip $APP)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个插件在plugins/nginx-vhost/bind-external-ip里面
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/bind-ip_zpsejjdrghn.png" alt="" />
+这个函数是通过查看应用的repository，看看有没有设置绑定外网ip的参数，如果有，就返回true，否则返回false.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>is_image_buildstep_based "$IMAGE"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>是用来判断我们之前通过build和release阶段的时候，出来的image是通过dockerfile出来的，还是通过标准heroku来解析的。如果是前者，那么，Dockerfile中应该制定了程序入口，端口之类的东西，如果没有端口指定也不影响，如果是后者，在执行docker run的时候，只要执行/start web实际上就是启动了应用容器，这是由heroku来做的事情。
+接下来通过我们之前做的是否制定了ip来判断，如果没有指定ip，那么，这个应用容器的ip就是跑起来的时候的docker分配的ip地址，通过</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>docker inspect --format '' $id</span></code></pre></td></tr></table></div></figure>
+
+
+<p>来查询。而port当Dockerfile中没有指定的时候，就默认是5000，如果制定了，就是指定的端口。启动应用容器也是很简单，加上-e PORT的参数，docker的其他参数，image我们也制定好了，$START_CMD也是，如果是buildstep的就是/start web，如果是dockerfile的，那么就是dockerfile中定义的entrypoint。这样就启动了应用容器。如果指定了ip，那么也是差不多的，只不过，容器的ip不再是docker分配的地址，启动的时候，参数照样加，不过端口指定为容器的5000端口，至于host主机暴露的端口是多少，我们可以通过<code>docker port $id container_ip</code>获得。而ip就是本机了。
+接着，做一个对部署的应用的检查，如果成功了，就可以使用新的容器了。
+使用新的容器，就要把原来的容器的id啊，ip啊，port啊之类的参数都修改了，那么再次有用户访问的时候，就是新的容器了。
+新的容器部署好了之后，还要把旧的容器给删除，<code>docker kill $oldid</code>就可以了。
++ url
+最后的时候，还做了一件事，就是，部署好了，怎么访问呢？或者说怎么告诉用户怎么访问呢？这就用到了<code>dokku url "$APP"</code>
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/url_zps7uw8gcug.png" alt="" />
+从这里可以看到，这个函数就是打印出了IP地址和端口号，也就是docker部署container的标准访问方式。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dokku源码解读二]]></title>
+    <link href="http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/"/>
+    <updated>2015-05-04T17:03:52+08:00</updated>
+    <id>http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-[?]</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
+
+<!--more-->
+
+
+<h3>dokku进入点</h3>
+
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;&#58;&#x67;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#46;&#x63;&#x6f;&#x6d;">&#103;&#105;&#x74;&#x40;&#x67;&#x69;&#116;&#x2e;&#x63;&#111;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo service ssh stop
+</span><span class='line'>sudo /usr/sbin/sshd -d</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后在客户端重新部署一个服务，可以看到这样的提示。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshd_zpspxi2f2st.png" alt="sshd" />
+我们去看看，/home/dokku/.sshcommand做了什么。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cat /home/dokku/.sshcommand</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/catsshcommand_zpsmucywnao.png" alt="catsshcommand" />
+这也就说明，不管你原来的命令是什么（$SSH_ORIGINAL_COMMAND），dokku都在这个命令前面增加了一个/usr/local/bin/dokku，也就是修改了客户端ssh进去的进入点，从而实现了进入pass平台部署任务的功能。
+那么这个.sshcommand是怎么来的呢？我们去查看我们的安装文档，我这里是使用的vagrant安装的，我们可以去查看Vagrantfile文件。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/vagrantfile_zpsm3ofhsjy.png" alt="vagrantfile" />
+在这里面，我们可以看到，这里只要是用的makefile安装的，我们接着查看Makefile。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshcommand_zps4po9ghg4.png" alt="sshcommand" />
+这里可以看到，下载了一个脚本文件，然后执行了</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sshcommand create dokku /usr/local/bin/dokku</span></code></pre></td></tr></table></div></figure>
+
+
+<p>命令，我们可以从makefile中找到SSHCOMMAND_URL的网址</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>SSHCOMMAND_URL ?= https://raw.github.com/progrium/sshcommand/master/sshcommand</span></code></pre></td></tr></table></div></figure>
+
+
+<p>进入到这个网址，我们可以看到
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshcommandcreate_zps1gqu4vme.png" alt="sshcommand" />
+也就是说，在安装dokku paas平台，这个地步的时候，加入了了这个进入点。</p>
+
+<h3>dokku push流程（git插件文件夹解读）</h3>
+
+<p>我们现在来浏览一遍，dokku完整的push一个应用都做了什么。
+首先，我们先把dokku源码的目录整理一下。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/structure_zpshzuy9dmb.png" alt="structure" />
+其次，我们已经说过了，dokku修改了进入点，当执行git-receive-pack的时候，并不是直接直接执行，而是修改成了/usr/local/bin/dokku git-receive-pack，那么这样一来，就是调用dokku的命令了。我们从目录结构里面找到dokku文件，在这里面的case里面，并没有找到git-receive-pack这个case，但是，我们找到了一个通配的东西
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-git_zps32ecyn2r.png" alt="dokku-git*" />
+从这里面可以看到，如果找不到对应的case，就去$PLUGIN_PATH/*/command里面去找，直到找到对应的东西。$PLUGIN_PATH路径下的东西就是我们源码中plugins路径下面的东西，我们可以直接在源码里面找。plugins里面的东西的命名还是很科学的，基本每个文件下的都是相关的hook。我们可以在plugins/git/command里面找到相关的东西</p>
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-git_zpsjy8lits8.png" alt="git-git*" />
+这里当遇到是git-receive-pack命令的时候，就先初始化一个空的git仓库，然后写了一个脚本，给这个脚本附上可执行权限，并执行。脚本里执行的是</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dokku git-hook $APP</span></code></pre></td></tr></table></div></figure>
+
+
+<p>同样的，我们在相同的文件里面，找到git-hook
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-hook_zpspnl5souw.png" alt="git-hook" />
+这里主要是判断用户push是否push到了master分支上，如果没有，提示如何push，如果正确push了，就执行,说明这是一个新push的应用。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>pluginhook receive-app $APP $newrev</span></code></pre></td></tr></table></div></figure>
+
+
+<p>既然是pluginhook方式的调用，我们肯定要在$PLUGIN_PATH里面查找这个文件了，这个文件也在git文件夹里面
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/receive-app_zpshkokzbhu.png" alt="receive-app" />
+可以看到，这里执行了</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dokku git-build $APP $REV</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-build_zpsjk6xccvx.png" alt="git-build" />
+这里有两个case，git-build判断是否这个app正在部署，或者被加锁了，否则就加锁，开始部署。git-build-locked就要开始真正的部署了。同样的文件夹找到git_build_app_repo()，
+<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-build-app_zpsvyxylgsi.png" alt="git-build-app" />
+首先，检查一下app name，看看是否为空，或者是否不存在这个app目录，verify_app_name()这个函数在plugins/common/functions这里面，然后建造一个用来run这个应用的临时目录，并把应用拷贝到这个临时目录，最后，通过查看应用中有没有Dockerfile来判断，接下来执行的命令。但是不管有没有dockerfile，都会执行dokku receive命令。
+终于，我们在dokku源码文件中，找到了receive的case分支。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Dokku源码解读一]]></title>
+    <link href="http://monkey-h.github.io/blog/dokkudao-di-gan-liao-shi-yao/"/>
+    <updated>2015-05-01T09:05:19+08:00</updated>
+    <id>http://monkey-h.github.io/blog/dokkudao-di-gan-liao-shi-yao</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
+
+<!--more-->
+
+
+<h3>背景知识</h3>
+
+<ul>
+<li><p>git
+  git是一个分布式版本控制软件，那么什么是版本控制呢？简单来说，版本控制就是一种记录一个或若干文件内容变换，以便将来查阅特定版本修订情况的系统，分为集中式版本控制和分布式版本控制。除了Git，还有像Mercurial，Bazaar，Darcs等。Git的客户端并只是提取最新版本的文件快照，而是把代码仓库完整地镜像下来，这样的话，任何一处协同工作用的服务器发生故障，事后都可以用任何一个镜像出来的本地仓库恢复，因为每一次的提取操作，实际上都是一次对代码仓库的完整备份。
+  Git可以简单理解成客户端/服务器（C/S）模型，客户端就是客户使用的，用来上传repository和下载repository，修改repository的地方，那么服务器是什么东西呢？不要害怕，其实服务器端更简单。通俗点讲，服务器就是一个文件存储系统，push的时候，就是把本地的repository上传到这个服务器的某一个目录，clone的时候，就是把那个目录的文件下载下来而已，只不过在部署服务器，上传的时候，可能会做一些初始化而已，这都不是重点。
+  关于Git我们这里就不再更多的介绍，大家可以在<a href="git-scm.com/book/zn" title="git中文介绍">这里</a>看到最详细的介绍，下面我们说一点dokku使用的Git的一个小技巧。
+  当我们在客户端git push的时候，在服务器端，到底做了什么？当push的时候，首先，会通过ssh的密钥机制来检验你是否有资格push，如果有资格，那么在服务器端，接收到你push的命令的时候，会首先执行
+  <code>
+  ssh git@git-repositry.com git-receive-pack 'my-app.git'
+ </code>
+  这个命令。是不是很神奇，知道了这个，我们就知道了dokku平台的入口在哪里，那么，接下来，所有的事情都好解释了。</p></li>
+<li><p>pluginhook
+  pluginhook并不是被大家普遍使用的一个项目，这是dokku的原作者自己提出，并且用在自己的项目，比如dokku中的一个子项目。那么，这个项目是不是就很难理解？其实不是，如果换个名字，大家估计就会很熟悉，hook。Git本身就有hook机制，其作用主要是，当某些重要时间发生时，Git以调用自定义的脚本。在Git中，有两组挂钩，客户端和服务器端的。客户端主要用于客户端的操作，像你在commit的时候，可能同时希望可以提交和合并等，但是对一个paas平台而言，关注的更多是服务器端的hook脚本。服务器端的hook Git脚本，通常被一些开发者用来做自动部署，也就是说，当用户通过客户端git push操作后，服务器端在收到这个commit之前，之后，都可以自动调用.git/hooks目录下的一些脚本文件，并执行。非常适合自动部署，在用户push之后，不需要再到服务器端，执行部署工作。hook脚本的作用就是这样，那么pluginhook又做了什么事情呢？pluginhook的项目代码很少，只有不到200行的go语言的代码。是一个比hook本身更好的plugin system。相对于hook脚本，pluginhook更关注plugin，什么意思呢？就是说，他把所有的hook脚本都集中在一个plugins的目录里，当然，这个目录也是特定的目录，这样，操作系统才知道怎么去找plugin的目录。同一个hook脚本，可以有多个plugin，调用的时候，这些plugin都会去执行。简单来说呢，pluginhook就是对hook进行了一层封装，把原本调用hook脚本的地方，用pluginhook来调用，如hook脚本调用
+  <code>
+  hooks/post-commit $REV $USER
+ </code>
+  可以用pluginhook这样调用
+  <code>
+  pluginhook post-commit $REV $USER
+ </code>
+  pluginhook命令就是简单的把plugin目录下的所有路径都找一遍，这个路径是通过环境变量$PLUGIN_PATH来定义的，只要找到和命令相同的文件的名字，就把这个命令之后的参数都传给这个文件，让他执行。那么，用pluginhook和hook有什么区别呢？可以这么说，不用pluginhook，只用hook也是可以完全实现这些功能的。使用hook，一是为了方便，二是，每个我们需要处理的点，只能有一个hook脚本实现，这是dokku所不希望的事情，所以，才有了pluginhook的出现。
+  关于pluginhook的实现的代码阅读，我们之后再补充。</p></li>
+<li><p>ssh
+  ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。
+  <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshd_zpspxi2f2st.png" alt="email" />
+  可以看到，dokku做了一件事情，他把所有的命令，都通过/home/dokku/.sshcommand这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。</p></li>
+</ul>
+
 ]]></content>
   </entry>
   
