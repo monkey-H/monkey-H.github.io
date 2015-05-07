@@ -136,116 +136,142 @@
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl stop docker.service
+</span><span class='line'>sudo systemctl enable /etc/systemd/system/docker.service
+</span><span class='line'>sudo systemctl daemon-reload
+</span><span class='line'>sudo systemctl start docker.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>接下来就可以pull私有仓库里可以编译flannel的image了。在docker hub里面，叫做google/golang是一个支持go语言的image，我在上传到私有仓库的时候，为了名字好记，重新命名了，实际上就是这个image。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/pull_zpsihbxjfxl.png" alt="pull" /></p>
+
+<h4>安装flannel</h4>
+
+<p>现在我们已经从私服上下载下来了编译flannel的image，现在我们需要flannel的源码，由于我们这里不能使用外网，所以，还是通过tomcat的方式下载，如果可以使用外网，可以直接使用git clone来下载</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git clone https://github.com/coreos/flannel.git</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们这里是从tomcat服务器上下载的。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/wget_zpswmf12hii.png" alt="wget" />
+接下来，解压，移动到/opt目录，为什么这么做，是为了防止以后误删。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>tar -zxf flannel.tar.gz
+</span><span class='line'>sudo mkdir /opt
+</span><span class='line'>sudo mv flannel/* /opt
+</span><span class='line'>cd /opt</span></code></pre></td></tr></table></div></figure>
+
+
+<p>好了，现在可以编译了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>docker run -v /opt:/opt/flannel -ti docker.iwanna.xyz:5000/hmonkey/flannel /bin/bash -c "cd /opt/flannel && ./build"</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/building_zps5vlcndnc.png" alt="building" />
+接下来，我们就要创建flannel服务了。
+进入到我们的unit files目录。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/systemd/system
+</span><span class='line'>sudo touch flannel.service
+</span><span class='line'>sudo vim flannel.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在里面写入这样的代码。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
 <span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl stop docker.service
-</span><span class='line'>sudo systemctl enable /etc/systemd/system/docker.service
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
+</span><span class='line'>Description=flannel
+</span><span class='line'>Requires=etcd.service
+</span><span class='line'>After=etcd.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>ExecStartPre=-/usr/bin/etcdctl mk /coreos.com/network/config '{"Network":"10.0.0.0/16"}'
+</span><span class='line'>ExecStart=/opt/bin/flanneld
+</span><span class='line'>
+</span><span class='line'>[Install]
+</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后，启动这个服务。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl enable flannel.service
+</span><span class='line'>sudo systemctl start flannel.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以查看状态，如果是这样，就说明成功了。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/status_zpsk02mrnhs.png" alt="status" />
+接下来，停掉docker.service，删除网桥docker0，让docker0使用flannel的网桥，然后修改docker.service，重启docker。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>source /run/flannel/subnet.env
+</span><span class='line'>sudo systemctl stop docker.service
+</span><span class='line'>sudo ifconfig docker0 ${FLANNEL_SUBNET}
+</span><span class='line'>sudo vim docker.service
 </span><span class='line'>sudo systemctl daemon-reload
-</span><span class='line'>sudo systemctl start docker.service```
-</span><span class='line'>接下来就可以pull私有仓库里可以编译flannel的image了。在docker hub里面，叫做google/golang是一个支持go语言的image，我在上传到私有仓库的时候，为了名字好记，重新命名了，实际上就是这个image。
-</span><span class='line'>![pull](http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/pull_zpsihbxjfxl.png)
+</span><span class='line'>sudo systemctl start docker.service</span></code></pre></td></tr></table></div></figure>
+
+
+<p>编辑docker.service的时候，使得最后，docker.service看起来是这个样子的。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
+</span><span class='line'>Description=Docker Application Container Engine
+</span><span class='line'>Documentation=http://docs.docker.com
+</span><span class='line'>After=docker.socket early-docker.target network.target
+</span><span class='line'>Requires=docker.socket early-docker.target
 </span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>Environment=TMPDIR=/var/tmp
+</span><span class='line'>EnvironmentFile=-/run/flannel/subnet.env
+</span><span class='line'>MountFlags=slave
+</span><span class='line'>LimitNOFILE=1048576
+</span><span class='line'>LimitNPROC=1048576
+</span><span class='line'>ExecStart=/usr/lib/coreos/dockerd --insecure-registry docker.iwanna.xyz:5000 --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} --daemon --host=fd://
 </span><span class='line'>
-</span><span class='line'>####安装flannel
-</span><span class='line'>现在我们已经从私服上下载下来了编译flannel的image，现在我们需要flannel的源码，由于我们这里不能使用外网，所以，还是通过tomcat的方式下载，如果可以使用外网，可以直接使用git clone来下载</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>[Install]
+</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
 
-
-<p>git clone <a href="https://github.com/coreos/flannel.git">https://github.com/coreos/flannel.git</a></p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>我们这里是从tomcat服务器上下载的。
-</span><span class='line'>![wget](http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/wget_zpswmf12hii.png)
-</span><span class='line'>接下来，解压，移动到/opt目录，为什么这么做，是为了防止以后误删。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>tar -zxf flannel.tar.gz
-sudo mkdir /opt
-sudo mv flannel/* /opt
-cd /opt</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>好了，现在可以编译了。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>docker run -v /opt:/opt/flannel -ti docker.iwanna.xyz:5000/hmonkey/flannel /bin/bash -c &ldquo;cd /opt/flannel &amp;&amp; ./build&rdquo;</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>![building](http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/building_zps5vlcndnc.png)
-</span><span class='line'>接下来，我们就要创建flannel服务了。
-</span><span class='line'>进入到我们的unit files目录。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>cd /etc/systemd/system
-sudo touch flannel.service
-sudo vim flannel.service</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>在里面写入这样的代码。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>[Unit]
-Description=flannel
-Requires=etcd.service
-After=etcd.service</p>
-
-<p>[Service]
-ExecStartPre=-/usr/bin/etcdctl mk /coreos.com/network/config &lsquo;{&ldquo;Network&rdquo;:&ldquo;10.0.0.0/16&rdquo;}&rsquo;
-ExecStart=/opt/bin/flanneld</p>
-
-<p>[Install]
-WantedBy=multi-user.target</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>然后，启动这个服务。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>sudo systemctl enable flannel.service
-sudo systemctl start flannel.service</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>可以查看状态，如果是这样，就说明成功了。
-</span><span class='line'>![status](http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/status_zpsk02mrnhs.png)
-</span><span class='line'>接下来，停掉docker.service，删除网桥docker0，让docker0使用flannel的网桥，然后修改docker.service，重启docker。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>source /run/flannel/subnet.env
-sudo systemctl stop docker.service
-sudo ifconfig docker0 ${FLANNEL_SUBNET}
-sudo vim docker.service
-sudo systemctl daemon-reload
-sudo systemctl start docker.service</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>编辑docker.service的时候，使得最后，docker.service看起来是这个样子的。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>[Unit]
-Description=Docker Application Container Engine
-Documentation=<a href="http://docs.docker.com">http://docs.docker.com</a>
-After=docker.socket early-docker.target network.target
-Requires=docker.socket early-docker.target</p>
-
-<p>[Service]
-Environment=TMPDIR=/var/tmp
-EnvironmentFile=-/run/flannel/subnet.env
-MountFlags=slave
-LimitNOFILE=1048576
-LimitNPROC=1048576
-ExecStart=/usr/lib/coreos/dockerd &ndash;insecure-registry docker.iwanna.xyz:5000 &ndash;bip=${FLANNEL_SUBNET} &ndash;mtu=${FLANNEL_MTU} &ndash;daemon &ndash;host=fd://</p>
-
-<p>[Install]
-WantedBy=multi-user.target
-&#8220;`</p>
 
 <p>好了，大功告成，验证一下。
 我们在coreos3上随便跑一个container，可以看到，他的ip是我们之前用flannel获得的。
