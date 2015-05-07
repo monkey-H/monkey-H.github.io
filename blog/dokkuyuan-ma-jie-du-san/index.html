@@ -120,9 +120,13 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 在deploy的开始阶段，首先执行了<code>pluginhook pre-build $APP</code>这段代码调用了plugin的一个插件，pre-build，这个插件可以在plugins/build-env/pre-build中找到
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/pre-build_zpsktyjirfr.png" alt="pre-build" />
 这个插件的作用也是十分明显的，第一，把原来build阶段的环境变量设置成应用的变量（大部分还是一些等待时间等变量），第二，把所有的build阶段的参数，都累加起来，再启动一个容器，把这些变量添加到这个容器中，然后把这个容器commit成一个image，让接下来的启动都从这个image中启动。
-接下来，就需要启动这个app了。首先判断是否已经起了一个这样的应用，如果已经启动了，那么我们就需要知道已经启动的这个容器的id是多少。由于我们在每次部署应用的时候，都会把他的id设置到$DOKKU_ROOOT/$APP/CONTAINER里面去，所以，直接读出来这个东西就ok了。为什么要知道这个id，是由于我们后面要把旧的container杀死，所以必须知道。接下来，DOCKER_ARGS参数已经在后来的版本中取消了，不用看了。要注意，我们执行了这么一句话。
-<code>BIND_EXTERNAL=$(pluginhook bind-external-ip $APP)</code>
-这个插件在plugins/nginx-vhost/bind-external-ip里面
+接下来，就需要启动这个app了。首先判断是否已经起了一个这样的应用，如果已经启动了，那么我们就需要知道已经启动的这个容器的id是多少。由于我们在每次部署应用的时候，都会把他的id设置到$DOKKU_ROOOT/$APP/CONTAINER里面去，所以，直接读出来这个东西就ok了。为什么要知道这个id，是由于我们后面要把旧的container杀死，所以必须知道。接下来，DOCKER_ARGS参数已经在后来的版本中取消了，不用看了。要注意，我们执行了这么一句话。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>BIND_EXTERNAL=$(pluginhook bind-external-ip $APP)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个插件在plugins/nginx-vhost/bind-external-ip里面
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/bind-ip_zpsejjdrghn.png" alt="" />
 这个函数是通过查看应用的repository，看看有没有设置绑定外网ip的参数，如果有，就返回true，否则返回false.
 <code>is_image_buildstep_based "$IMAGE"</code>
