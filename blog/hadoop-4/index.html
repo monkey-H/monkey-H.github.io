@@ -5,12 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Hello World - Welcome to monkey-H&#8217;s blog</title>
+  <title>图的三角形计数 - Welcome to monkey-H&#8217;s blog</title>
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="hello! world
-">
+  <meta name="description" content="实验背景 图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://monkey-h.github.io/blog/hello-world/">
+  <link rel="canonical" href="http://monkey-h.github.io/blog/hadoop-4/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
@@ -69,7 +68,7 @@
   
   <header>
     
-      <h1 class="entry-title">Hello World</h1>
+      <h1 class="entry-title">图的三角形计数</h1>
     
     
       <p class="meta">
@@ -78,14 +77,71 @@
 
 
 
-<time class='entry-date' datetime='2015-04-28T17:46:50+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:46 pm</span></time>
+<time class='entry-date' datetime='2015-05-08T09:05:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:05 am</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p><code>hello! world</code></p>
+<div class="entry-content"><h3>实验背景</h3>
+
+<p>图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。
+换句话说，这TM是mapreduce课程的作业啊，不做也得做啊！！！</p>
+
+<!--more-->
+
+
+<h3>实验要求</h3>
+
+<p>一个社交网络可以看做是一张图(离散数学中的图)。社交网络中的人对应于图的顶点;社 交网络中的人际关系对应于图中的边。在本次实验任务中,我们只考虑一种关系——用户之 间的关注关系。假设“王五”在 Twitter/微博中关注了“李四”,则在社交网络图中,有一条对 应的从“王五”指向“李四”的有向边。图 1 中展示了一个简单的社交网络图,人之间的关注关 系通过图中的有向边标识了出来。
+<img src="" alt="graph" />
+本次的实验任务就是在给定的社交网络图中,统计图中所有三角形的数量。
+在统计前,需要先进行有向边到无向边的转换,依据如下逻辑转换:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>IF ( A→B) OR (B→A) THEN A-B</span></code></pre></td></tr></table></div></figure>
+
+
+<p>“A→B”表示从顶点 A 到顶点 B 有一条有向边。A-B 表示顶点 A 和顶点 B 之间有一条无向边。
+一个示例见图 1,图 1 右侧的图就是左侧的图去除边方向后对应的无向图。 请在无向图上统计三角形的个数。在图 1 的例子中,一共有 3 个三角形。
++ 输入格式
+输入数据仅一个文件。该文件由若干行组成,每一行由两个以空格分隔的整数组成:
+A B
+A,B 分别是两个顶点的 ID。这一行记录表示图中具有一条由 A 到 B 的有向边。整个图的结构由该文件唯一确定。
+下面的框中是文件部分内容的示例:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>87982906 17975898
+</span><span class='line'>17809581 35664799
+</span><span class='line'>524620711 270231980
+</span><span class='line'>247583674 230498574
+</span><span class='line'>348281617 255810948
+</span><span class='line'>159294262 230766095
+</span><span class='line'>14927205 5380672
+</span><span class='line'>......</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>输出格式
+请在报告中报告如下内容:
+1.实验设计说明,包括主要设计思路、算法设计、程序和各个类的设计说明
+2.最终统计出的三角形个数
+3.程序运行和实验结果说明和分析
+4.性能、扩展性等方面存在的不足和可能的改进之处
+5.源程序,执行程序
+6.在集群上运行 MapReduce 作业的截屏、JobTracker 上记录的截屏</li>
+</ul>
+
+
+<h3>实验思路</h3>
 </div>
 
 
@@ -101,7 +157,7 @@
 
 
 
-<time class='entry-date' datetime='2015-04-28T17:46:50+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:46 pm</span></time>
+<time class='entry-date' datetime='2015-05-08T09:05:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:05 am</span></time>
       
 
 
@@ -109,7 +165,7 @@
     
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/hello-world/" data-via="" data-counturl="http://monkey-h.github.io/blog/hello-world/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/hadoop-4/" data-via="" data-counturl="http://monkey-h.github.io/blog/hadoop-4/" >Tweet</a>
   
   
   
@@ -118,8 +174,8 @@
     
     <p class="meta">
       
+        <a class="basic-alignment left" href="/blog/net-add/" title="Previous Post: vpn添加路由规则+octopress push报错">&laquo; vpn添加路由规则+octopress push报错</a>
       
-        <a class="basic-alignment right" href="/blog/bash-trick/" title="Next Post: bash 脚本语言学习收获">bash 脚本语言学习收获 &raquo;</a>
       
     </p>
   </footer>
