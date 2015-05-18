@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-18T17:35:03+08:00</updated>
+  <updated>2015-05-18T18:21:15+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -73,7 +73,26 @@ git我们之前也介绍过了，git就是一个版本控制工具，而具备�
 <p>这个时候，应该可以看到输出了hello。</p>
 
 <p>attention：
-需要注意的是，如果我们修改了rsa key前面的command，那么我们ssh进去服务器的时候，会执行command，而不会进去了，一定要注意这种情况，有可能导致你永远进不去系统。解决办法是你在coreos系统中重新建立一个用户，修改这个用户的rsa key前的command，而保存一个始终可以ssh进去的用户。但是我不知道coreos怎么给新用户赋予可以sudo权限，没有找到visudo，或者sudiors，等我知道了就在这里补充一下。所以我现在就保持有一个ssh到coreos的终端，或者每次下班了之后，就把rsa key中的command去除，下次尝试的时候再加进去。</p>
+需要注意的是，如果我们修改了rsa key前面的command，那么我们ssh进去服务器的时候，会执行command，而不会进去了，一定要注意这种情况，有可能导致你永远进不去系统。解决办法是你在coreos系统中重新建立一个用户，修改这个用户的rsa key前的command，而保存一个始终可以ssh进去的用户。但是我不知道coreos怎么给新用户赋予可以sudo权限，没有找到visudo，或者sudoers，等我知道了就在这里补充一下。所以我现在就保持有一个ssh到coreos的终端，或者每次下班了之后，就把rsa key中的command去除，下次尝试的时候再加进去。</p>
+
+<p>coreos添加新用户，并赋予sudo权限。
+添加user的时候，不要用常规的linux方法，采用修改cloud-config文件的方式。cloud-config文件在/var/lib/coreos-install/user_data里面。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- name: test
+</span><span class='line'>    ssh-authorized-keys:
+</span><span class='line'>      - ssh-rsa xxx
+</span><span class='line'>    groups:
+</span><span class='line'>      - sudo
+</span><span class='line'>      - docker</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在users里面添加这样一个新的用户，group里面的sudo，就是赋予sudo权限。具体可以看官方说明。</p>
 
 <h3>服务器</h3>
 
@@ -1673,7 +1692,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#105;&#x6c;&#x74;&#x6f;&#58;&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#x74;&#46;&#x63;&#111;&#109;">&#103;&#105;&#116;&#64;&#103;&#x69;&#116;&#46;&#x63;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;&#58;&#103;&#x69;&#x74;&#x40;&#x67;&#x69;&#x74;&#46;&#x63;&#x6f;&#x6d;">&#103;&#x69;&#x74;&#64;&#103;&#x69;&#x74;&#x2e;&#99;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
