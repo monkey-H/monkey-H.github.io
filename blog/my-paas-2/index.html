@@ -158,7 +158,8 @@ git我们之前也介绍过了，git就是一个版本控制工具，而具备�
 </span><span class='line'>      - docker</span></code></pre></td></tr></table></div></figure>
 
 
-<p>在users里面添加这样一个新的用户，group里面的sudo，就是赋予sudo权限。具体可以看官方说明。</p>
+<p>在users里面添加这样一个新的用户，group里面的sudo，就是赋予sudo权限。具体可以看官方说明。然后使得新配置生效。
+<code>sudo coreos-cloudinit --from-file /var/lib/coreos-install/user_data</code></p>
 
 <h3>服务器</h3>
 

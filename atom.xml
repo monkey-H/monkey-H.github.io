@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-18T18:21:15+08:00</updated>
+  <updated>2015-05-18T18:23:58+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -92,7 +92,8 @@ git我们之前也介绍过了，git就是一个版本控制工具，而具备�
 </span><span class='line'>      - docker</span></code></pre></td></tr></table></div></figure>
 
 
-<p>在users里面添加这样一个新的用户，group里面的sudo，就是赋予sudo权限。具体可以看官方说明。</p>
+<p>在users里面添加这样一个新的用户，group里面的sudo，就是赋予sudo权限。具体可以看官方说明。然后使得新配置生效。
+<code>sudo coreos-cloudinit --from-file /var/lib/coreos-install/user_data</code></p>
 
 <h3>服务器</h3>
 
@@ -1692,7 +1693,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#x69;&#108;&#x74;&#111;&#58;&#103;&#x69;&#x74;&#x40;&#x67;&#x69;&#x74;&#46;&#x63;&#x6f;&#x6d;">&#103;&#x69;&#x74;&#64;&#103;&#x69;&#x74;&#x2e;&#99;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#x61;&#105;&#108;&#x74;&#111;&#58;&#103;&#x69;&#116;&#64;&#x67;&#x69;&#116;&#46;&#99;&#111;&#x6d;">&#103;&#x69;&#x74;&#64;&#x67;&#x69;&#x74;&#46;&#x63;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
