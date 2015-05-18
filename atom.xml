@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-08T09:21:05+08:00</updated>
+  <updated>2015-05-18T14:35:58+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -76,6 +76,430 @@ A,B 分别是两个顶点的 ID。这一行记录表示图中具有一条由 A �
 
 
 <h3>实验思路</h3>
+
+<p>基本思路很简单，假如我们找到了 A->B 和 A->C 两个边，那么，我们只要去找有没有B->C这条边就可以了。
+详细来说，我们使用了三个map reduce过程来实现这个东西。
+- 第一个map reduce
+map用来调换顺序，意思就是，我们把 A->B 和 B->A 都变成 A->B，这样有什么好处呢？之前实验要求里也说了， A->B 和 B->A 这两条有向边应该化成一条无向边，这第一个map reduce就是做这个事情的。这里，把 A->B 作为key。
+reduce过程是去重，就是假如有多个A->B，记做一个边，当然如果实验要求不同，可以不同。
+- 第二个mapreduce
+map过程是把key A->B 拆开，把A作为key，把B作为value。这里是干什么呢？这里就是要寻找了，我们要找到需要的边，也就是上面举例中的B->C边存在不存在。
+reduce过程，对value进行处理。比如key为A，那么，其value应该是所有和A有边的点。假如B,C，那么我们就要把B->C作为新的key，其value我们用&amp;来代替，意思就是这是我们要找的边。另一方面，我们不能把原来的边直接删掉，因为我们还是要从这里面找边，那么，还要有A->B,A->C这样的key，其value我们用#来表示，代表这是存在的边。
+- 第三个mapreduce
+map过程没有做上面事情，就是把第二部reduce的数据重新传到第三步的reduce。
+reduce就是比对。我们找到每个key后面的value中，有没有#，如果有，就说明存在这个边，然后把除了#之外的&amp;的个数进行统计，和就是我们所需要的个数。最后通过一个cleanup函数，打印最后的统计结果即可。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>import java.io.IOException;
+</span><span class='line'>import java.util.ArrayList;
+</span><span class='line'>import java.util.StringTokenizer;
+</span><span class='line'>
+</span><span class='line'>import org.apache.hadoop.fs.Path;
+</span><span class='line'>import org.apache.hadoop.io.LongWritable;
+</span><span class='line'>import org.apache.hadoop.io.Text;
+</span><span class='line'>import org.apache.hadoop.mapreduce.Job;
+</span><span class='line'>import org.apache.hadoop.mapreduce.Mapper;
+</span><span class='line'>import org.apache.hadoop.mapreduce.Reducer;
+</span><span class='line'>import org.apache.hadoop.util.GenericOptionsParser;
+</span><span class='line'>import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+</span><span class='line'>import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+</span><span class='line'>import org.apache.hadoop.conf.Configuration;
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>public class triangle {
+</span><span class='line'>  
+</span><span class='line'>  public static class sortMapper extends Mapper&lt;Object, Text, Text, Text&gt;{
+</span><span class='line'>      private Text a = new Text();
+</span><span class='line'>      private Text b = new Text();
+</span><span class='line'>      
+</span><span class='line'>      public void map(Object key,Text value,Context context)throws IOException,InterruptedException {
+</span><span class='line'>
+</span><span class='line'>          StringTokenizer itr=new StringTokenizer(value.toString());
+</span><span class='line'>          long first = Integer.parseInt(itr.nextToken());
+</span><span class='line'>          long second = Integer.parseInt(itr.nextToken());
+</span><span class='line'>          if (first &lt;= second){
+</span><span class='line'>              a.set(first+"#"+second);
+</span><span class='line'>              b.set("#");
+</span><span class='line'>          }
+</span><span class='line'>          else{
+</span><span class='line'>              a.set(second+"#"+first);
+</span><span class='line'>              b.set("#");
+</span><span class='line'>          }
+</span><span class='line'>          context.write(a, b);
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>  
+</span><span class='line'>  public static class sortReducer extends Reducer&lt;Text, Text, Text, Text&gt;{
+</span><span class='line'>      private Text b = new Text();    
+</span><span class='line'>      public void reduce(Text key,Iterable&lt;Text&gt; values,Context context)throws IOException,InterruptedException {
+</span><span class='line'>          //Text b = new Text();
+</span><span class='line'>          b.set("#");
+</span><span class='line'>          context.write(key, b);
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>  
+</span><span class='line'>  public static class findMap extends Mapper&lt;LongWritable, Text, Text, Text&gt;{
+</span><span class='line'>      public void map(LongWritable key, Text value, Context context)throws IOException,InterruptedException {
+</span><span class='line'>          StringTokenizer itr=new StringTokenizer(value.toString());
+</span><span class='line'>          String[] tokens = itr.nextToken().toString().split("#");
+</span><span class='line'>          //String[] tokens = value.toString().split("#");
+</span><span class='line'>          String a = tokens[0];
+</span><span class='line'>          String b = tokens[1];
+</span><span class='line'>          //System.out.println(a+"    "+b);
+</span><span class='line'>          Text left = new Text();
+</span><span class='line'>          Text right = new Text();
+</span><span class='line'>          left.set(a+"");
+</span><span class='line'>          right.set(b+"");
+</span><span class='line'>          context.write(left, right);
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>  
+</span><span class='line'>  public static class findReducer extends Reducer&lt;Text, Text, Text, Text&gt;{
+</span><span class='line'>      
+</span><span class='line'>       public void reduce(Text key,Iterable&lt;Text&gt; values,Context context)throws IOException,InterruptedException {
+</span><span class='line'>           ArrayList&lt;String&gt; array = new ArrayList&lt;String&gt;();
+</span><span class='line'>           Text left = new Text();
+</span><span class='line'>           Text right = new Text();
+</span><span class='line'>           right.set("#");
+</span><span class='line'>           for(Text value : values){
+</span><span class='line'>               array.add(value.toString());
+</span><span class='line'>               left.set(key.toString()+"#"+value.toString());
+</span><span class='line'>               context.write(left, right);
+</span><span class='line'>           }
+</span><span class='line'>           for(int i=0; i&lt;array.size(); i++){
+</span><span class='line'>               for(int j=i+1; j&lt;array.size(); j++){
+</span><span class='line'>                   Text a = new Text();
+</span><span class='line'>                   Text b = new Text();
+</span><span class='line'>                   if(Integer.parseInt(array.get(i)) &lt; Integer.parseInt(array.get(j))){
+</span><span class='line'>                       a.set(array.get(i)+"#"+array.get(j));
+</span><span class='line'>                       b.set("&");
+</span><span class='line'>                   }
+</span><span class='line'>                   else{
+</span><span class='line'>                       a.set(array.get(j)+"#"+array.get(i));
+</span><span class='line'>                       b.set("&");
+</span><span class='line'>                   }
+</span><span class='line'>                   context.write(a, b);
+</span><span class='line'>               }
+</span><span class='line'>           }
+</span><span class='line'>       }
+</span><span class='line'>  }
+</span><span class='line'>  
+</span><span class='line'>  public static class combineMap extends Mapper&lt;LongWritable, Text, Text, Text&gt;{
+</span><span class='line'>      private Text a = new Text();
+</span><span class='line'>      private Text b = new Text();
+</span><span class='line'>      public void map(LongWritable key,Text value,Context context)throws IOException,InterruptedException {
+</span><span class='line'>          StringTokenizer itr=new StringTokenizer(value.toString());
+</span><span class='line'>          a.set(itr.nextToken().toString());
+</span><span class='line'>          b.set(itr.nextToken().toString());
+</span><span class='line'>          context.write(a, b);
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>  
+</span><span class='line'>  public static class combineReducer extends Reducer&lt;Text, Text, Text, Text&gt;{
+</span><span class='line'>      private static int result = 0;
+</span><span class='line'>      //private Text a = new Text();
+</span><span class='line'>      //private Text b = new Text();
+</span><span class='line'>      
+</span><span class='line'>      public void cleanup(Context context) throws IOException, InterruptedException{
+</span><span class='line'>          context.write(new Text("Result: "), new Text(""+result));
+</span><span class='line'>      }
+</span><span class='line'>      
+</span><span class='line'>      public void reduce(Text key,Iterable&lt;Text&gt; values,Context context)throws IOException,InterruptedException {
+</span><span class='line'>          int count = 0;
+</span><span class='line'>          int is_triangle = 0;
+</span><span class='line'>          for(Text value : values){
+</span><span class='line'>              if(value.toString().equalsIgnoreCase("#")){
+</span><span class='line'>                  is_triangle = 1;
+</span><span class='line'>              }else if(value.toString().equalsIgnoreCase("&")){
+</span><span class='line'>                  count ++;
+</span><span class='line'>              }else{
+</span><span class='line'>                  //System.out.println("wrong input number");
+</span><span class='line'>              }
+</span><span class='line'>          }
+</span><span class='line'>          if (is_triangle == 1){
+</span><span class='line'>              result += count;
+</span><span class='line'>          }
+</span><span class='line'>          //b.set(result+"");
+</span><span class='line'>          //context.write(key, new Text(count+""));
+</span><span class='line'>      }
+</span><span class='line'>  }
+</span><span class='line'>  
+</span><span class='line'>  public static void main(String[] args) throws Exception {
+</span><span class='line'>        // TODO Auto-generated method stub
+</span><span class='line'>        Configuration conf=new Configuration();
+</span><span class='line'>        String[] otherArgs=new GenericOptionsParser(conf,args).getRemainingArgs();
+</span><span class='line'>        if (otherArgs.length!=4) {
+</span><span class='line'>            System.err.println("Usage:invertedindex&lt;in&gt; &lt;out1&gt; &lt;out2&gt; &lt;out3&gt;");
+</span><span class='line'>            System.exit(2);
+</span><span class='line'>        }
+</span><span class='line'>        
+</span><span class='line'>        Job job1 = new Job(conf, "job1");
+</span><span class='line'>        job1.setJarByClass(triangle.class);
+</span><span class='line'>        job1.setMapperClass(sortMapper.class);
+</span><span class='line'>        job1.setMapOutputKeyClass(Text.class);
+</span><span class='line'>        job1.setMapOutputValueClass(Text.class);
+</span><span class='line'>        job1.setReducerClass(sortReducer.class);
+</span><span class='line'>        job1.setOutputKeyClass(Text.class);
+</span><span class='line'>        job1.setOutputValueClass(Text.class);
+</span><span class='line'>
+</span><span class='line'>        //job1.setInputFormatClass(TextInputFormat.class);
+</span><span class='line'>        //job1.setOutputFormatClass(TextOutputFormat.class);
+</span><span class='line'>        //job1.setMapOutputKeyClass(Text.class);
+</span><span class='line'>        //job1.setMapOutputValueClass(Text.class);
+</span><span class='line'>        
+</span><span class='line'>        FileInputFormat.addInputPath(job1, new Path(otherArgs[0]));
+</span><span class='line'>        FileOutputFormat.setOutputPath(job1, new Path(otherArgs[1]));
+</span><span class='line'>        
+</span><span class='line'>        job1.waitForCompletion(true);
+</span><span class='line'>        
+</span><span class='line'>
+</span><span class='line'>        Job job2 = new Job(conf, "job2");
+</span><span class='line'>        job2.setJarByClass(triangle.class);
+</span><span class='line'>        job2.setMapperClass(findMap.class);
+</span><span class='line'>        job2.setMapOutputKeyClass(Text.class);
+</span><span class='line'>        job2.setMapOutputValueClass(Text.class);
+</span><span class='line'>        job2.setReducerClass(findReducer.class);
+</span><span class='line'>        job2.setOutputKeyClass(Text.class);
+</span><span class='line'>        job2.setOutputValueClass(Text.class);
+</span><span class='line'>        
+</span><span class='line'>        //job2.setInputFormatClass(TextInputFormat.class);
+</span><span class='line'>        //job2.setOutputFormatClass(TextOutputFormat.class);
+</span><span class='line'>        //job2.setMapOutputKeyClass(Text.class);
+</span><span class='line'>        //job2.setMapOutputValueClass(Text.class);
+</span><span class='line'>        
+</span><span class='line'>        FileInputFormat.addInputPath(job2, new Path(otherArgs[1]));
+</span><span class='line'>        FileOutputFormat.setOutputPath(job2, new Path(otherArgs[2]));
+</span><span class='line'>        
+</span><span class='line'>        job2.waitForCompletion(job1.isComplete());
+</span><span class='line'>     
+</span><span class='line'>        Job job3 = new Job(conf, "job3");
+</span><span class='line'>        job3.setJarByClass(triangle.class);
+</span><span class='line'>        job3.setMapperClass(combineMap.class);
+</span><span class='line'>        job3.setMapOutputKeyClass(Text.class);
+</span><span class='line'>        job3.setMapOutputValueClass(Text.class);
+</span><span class='line'>        job3.setReducerClass(combineReducer.class);
+</span><span class='line'>        job3.setOutputKeyClass(Text.class);
+</span><span class='line'>        job3.setOutputValueClass(Text.class);
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        //job3.setInputFormatClass(TextInputFormat.class);
+</span><span class='line'>        //job3.setOutputFormatClass(TextOutputFormat.class);
+</span><span class='line'>        //job3.setMapOutputKeyClass(Text.class);
+</span><span class='line'>        //job3.setMapOutputValueClass(Text.class);
+</span><span class='line'>        
+</span><span class='line'>        FileInputFormat.addInputPath(job3, new Path(otherArgs[2]));
+</span><span class='line'>        FileOutputFormat.setOutputPath(job3, new Path(otherArgs[3]));
+</span><span class='line'>        
+</span><span class='line'>        job3.waitForCompletion(job2.isComplete());
+</span><span class='line'>
+</span><span class='line'>    }
+</span><span class='line'>  
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
@@ -1048,7 +1472,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#x6f;&#x3a;&#103;&#105;&#x74;&#64;&#103;&#x69;&#116;&#x2e;&#x63;&#x6f;&#x6d;">&#x67;&#x69;&#x74;&#x40;&#x67;&#x69;&#x74;&#46;&#99;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#x3a;&#x67;&#105;&#116;&#x40;&#x67;&#105;&#116;&#x2e;&#x63;&#x6f;&#109;">&#103;&#x69;&#116;&#64;&#103;&#105;&#x74;&#x2e;&#99;&#111;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
