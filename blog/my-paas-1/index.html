@@ -1,0 +1,299 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>设计自己的paas平台一 - Welcome to monkey-H&#8217;s blog</title>
+  <meta name="author" content="monkey-H">
+
+  
+  <meta name="description" content="写在前面 在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://monkey-h.github.io/blog/my-paas-1/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+  
+    <h2>学习日记</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="monkey-h.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">设计自己的paas平台一</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-18T14:49:52+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:49 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h3>写在前面</h3>
+
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+
+<!--more-->
+
+
+<h3>coreos</h3>
+
+<p>在<a href="coreos.com">coreos官网上</a>，coreos的副标题就是Linux for massive server deployments。coreos简单来说，就是为云环境而生的操作系统，真正的云操作系统。它具有很多操作系统没有的优点，它最初的设计源自于google的chromeos，对系统结构重新设计，剔除了任何不必要的软件和服务。适合集群环境，而不是传统的服务器操作系统。
+没有提供包管理工具，通过容器化，向应用程序提供运算环境。应用程序之间共享系统内核和资源，但是彼此之间又互不可见。应用程序将不会再被直接安装到操作系统中，而是通过 Docker 运行在容器中。这种方式使得操作系统、应用程序及运行环境之间的耦合度大大降低。
+采用双系统分区设计。ChromeOS最大的优点。两个分区分别被设置成主动模式和被动模式并在系统运行期间各司其职。主动分区负责系统运行，被动分区负责系统升级。一旦新版本的操作系统被发布，一个完整的系统文件将被下载至被动分区，并在系统下一次重启时从新版本分区启动，原来的被动分区将切换为主动分区，而之前的主动分区则被切换为被动分区，两个分区扮演的角色将相互对调。同时在系统运行期间系统分区被设置成只读状态，这样也确保了 CoreOS 的安全性。CoreOS 的升级过程在默认条件下将自动完成，并且通过 cgroup 对升级过程中使用到的网络和磁盘资源进行限制，将系统升级所带来的影响降至最低。
+使用Systemd取代SysV作为系统和服务的管理工具。具备优秀的并行化处理能力，按需启动等特点。</p>
+
+<p>既然说到coreos是最好的云操作系统，那么coreos和集群就联系的十分紧密了。coreos集群中最重要的是三个概念。docker，fleet，etcd。</p>
+
+<p>docker技术我们这里就不在介绍了，docker技术也是我们研究的主题，如果docker技术都不懂，那么你根本不会看这篇blog。</p>
+
+<p>其次是fleet。fleet 是一个通过 Systemd对CoreOS 集群中进行控制和管理的工具。每个 fleet agent 之间通过 etcd 服务来注册和同步数据。fleet 提供的功能非常丰富，包括查看集群中服务器的状态、启动或终止 Docker container、读取日志内容等，某个服务器脱离集群，其上面的所有服务都会转移到别的服务器上。包括部署高可用的服务等。fleet提供了很多好用的api接口，在后面我们会详细介绍。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos/fleet_zps3dvxl6hl.png" alt="" /></p>
+
+<p>最后是etcd。etcd技术是coreos的骨架。etcd 是一个分布式 key/value 存储服务，CoreOS 集群中的程序和服务可以通过 etcd 共享信息或做服务发现 。etcd 基于 raft 一致性算法：通过选举形式在服务器之中选举 Lead 来同步数据，并以此确保集群之内信息始终一致和可用
+<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos/_zpscrifu3cf.png" alt="" /></p>
+
+<h3>systemd</h3>
+
+<p>在前面提到过，coreos是通过systemd来系统和服务的管理工具，同样的fleet也是通过systemd，看来，systemd的一些基本语法也是我们要了解的内容。</p>
+
+<ul>
+<li>sudo systemctl status xx.service 查看某个服务的状态。- sudo systemctl start xx.service- sudo systemctl stop xx.service- sudo systemctl kill xx.service- sudo systemctl restart xx.service- sudo systemctl daemon-reload 如果重启一个修改了service文件的服务，你必须reload service文件systemd由两个基本概念组成，unit和target。unit是一个配置文件，用来描述想要跑的进程的一些参数。target是一个grouping mechanism，用来允许systemd在同一时间起多个进程。systemd是coreos上启动的第一个进程。systemd进程读取不同的target，运行这些进程。每一个target一般是对unit文件的一个symlinks的集合，当运行systemctl enable foo.service 的时候，就会创建一个指向这个unit文件的symlinks，在multi-user.target.wants中。在coreos中，unit files一般位于/etc/systemd/system中，这个文件系统是可读写的。</li>
+</ul>
+
+
+<p>看个基本的例子。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
+</span><span class='line'>Description=MyApp
+</span><span class='line'>After=docker.service
+</span><span class='line'>Requires=docker.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>TimeoutStartSec=0
+</span><span class='line'>ExecStartPre=-/usr/bin/docker kill busybox1
+</span><span class='line'>ExecStartPre=-/usr/bin/docker rm busybox1
+</span><span class='line'>ExecStartPre=/usr/bin/docker pull busybox
+</span><span class='line'>ExecStart=/usr/bin/docker run --name busybox1 busybox /bin/sh -c "while true; do echo Hello World; sleep 1; done"
+</span><span class='line'>
+</span><span class='line'>[Install]
+</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
+
+
+<p>after和requires，这个基本定义了运行这个程序在哪个区间里，上面的例子就是说，只有在docker.service运行起来之后，才可以运行这个东西。execstart 在执行这个unit的时候，要干什么事情。这个进程的pid就是systemd监控的用来判断进程是否挂掉的进程。不要跑container用-d参数，这个参数会阻止container用这个pid的子进程来运行。这样systemd会认为这个进程已经退出了，那么这个unit也会被停止。wantedby指出这个unit是哪个targt的一部分。
+- sudo systemctl enable /etc/systemd/system/hello.service会创建一个symlink。- sudo systemctl start hello.service- journalctl -f -u hello.service会读取hello.service的输出。- ExecStartPre 执行execstart之前要执行的命令。- execstart 这个unit的主要的执行命令。- execstartpost 当execstart执行结束，执行的命令。- execreload 当执行systemctl reload xx.service的时候，会执行的命令。- execstop 当unit被认为失败，或者执行systemctl stop xx.service的时候，执行的命令。- execstoppost 当execstop执行完成后，执行的操作。- RestartSec 当重启一个服务的时候，要睡眠多少秒，当预防失败的服务没100ms自己尝试restart的情况。- =-是忽视这条命令产生的错误。当我们删除一个不存在的container的时候，会报没有这个container错误，但是我们只是保险起见，所以这个并不能称为错误。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">monkey-H</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-05-18T14:49:52+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:49 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/my-paas-1/" data-via="" data-counturl="http://monkey-h.github.io/blog/my-paas-1/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/hadoop-4/" title="Previous Post: 图的三角形计数">&laquo; 图的三角形计数</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/my-paas-1/">设计自己的paas平台一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/hadoop-4/">图的三角形计数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/bash-trick/">Bash 脚本语言学习收获</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/hello-world/">Hello World</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - monkey-H -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
