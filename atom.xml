@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-22T13:31:46+08:00</updated>
+  <updated>2015-05-22T13:33:59+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -243,17 +243,17 @@ execstart 在执行这个unit的时候，要干什么事情。这个进程的pid
 wantedby指出这个unit是哪个targt的一部分。</p>
 
 <ul>
-<li>sudo systemctl enable /etc/systemd/system/hello.service会创建一个symlink。</li>
-<li>sudo systemctl start hello.service</li>
-<li>journalctl -f -u hello.service会读取hello.service的输出。</li>
-<li>ExecStartPre 执行execstart之前要执行的命令。</li>
-<li>execstart 这个unit的主要的执行命令。</li>
-<li>execstartpost 当execstart执行结束，执行的命令。</li>
-<li>execreload 当执行systemctl reload xx.service的时候，会执行的命令。</li>
-<li>execstop 当unit被认为失败，或者执行systemctl stop xx.service的时候，执行的命令。</li>
-<li>execstoppost 当execstop执行完成后，执行的操作。</li>
-<li>RestartSec 当重启一个服务的时候，要睡眠多少秒，当预防失败的服务没100ms自己尝试restart的情况。</li>
-<li>=-是忽视这条命令产生的错误。当我们删除一个不存在的container的时候，会报没有这个container错误，但是我们只是保险起见，所以这个并不能称为错误。</li>
+<li><p>sudo systemctl enable /etc/systemd/system/hello.service会创建一个symlink。</p></li>
+<li><p>sudo systemctl start hello.service</p></li>
+<li><p>journalctl -f -u hello.service会读取hello.service的输出。</p></li>
+<li><p>ExecStartPre 执行execstart之前要执行的命令。</p></li>
+<li><p>execstart 这个unit的主要的执行命令。</p></li>
+<li><p>execstartpost 当execstart执行结束，执行的命令。</p></li>
+<li><p>execreload 当执行systemctl reload xx.service的时候，会执行的命令。</p></li>
+<li><p>execstop 当unit被认为失败，或者执行systemctl stop xx.service的时候，执行的命令。</p></li>
+<li><p>execstoppost 当execstop执行完成后，执行的操作。</p></li>
+<li><p>RestartSec 当重启一个服务的时候，要睡眠多少秒，当预防失败的服务没100ms自己尝试restart的情况。</p></li>
+<li><p>=-是忽视这条命令产生的错误。当我们删除一个不存在的container的时候，会报没有这个container错误，但是我们只是保险起见，所以这个并不能称为错误。</p></li>
 </ul>
 
 ]]></content>
@@ -1718,7 +1718,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#x69;&#108;&#x74;&#x6f;&#x3a;&#x67;&#105;&#116;&#x40;&#x67;&#x69;&#116;&#x2e;&#x63;&#111;&#109;">&#103;&#105;&#116;&#64;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#x3a;&#x67;&#x69;&#x74;&#x40;&#x67;&#x69;&#x74;&#46;&#99;&#x6f;&#109;">&#103;&#105;&#116;&#x40;&#103;&#105;&#x74;&#46;&#x63;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
