@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-19T20:11:48+08:00</updated>
+  <updated>2015-05-22T13:31:46+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -193,9 +193,18 @@ git我们之前也介绍过了，git就是一个版本控制工具，而具备�
 <p>在前面提到过，coreos是通过systemd来系统和服务的管理工具，同样的fleet也是通过systemd，看来，systemd的一些基本语法也是我们要了解的内容。</p>
 
 <ul>
-<li>sudo systemctl status xx.service 查看某个服务的状态。- sudo systemctl start xx.service- sudo systemctl stop xx.service- sudo systemctl kill xx.service- sudo systemctl restart xx.service- sudo systemctl daemon-reload 如果重启一个修改了service文件的服务，你必须reload service文件systemd由两个基本概念组成，unit和target。unit是一个配置文件，用来描述想要跑的进程的一些参数。target是一个grouping mechanism，用来允许systemd在同一时间起多个进程。systemd是coreos上启动的第一个进程。systemd进程读取不同的target，运行这些进程。每一个target一般是对unit文件的一个symlinks的集合，当运行systemctl enable foo.service 的时候，就会创建一个指向这个unit文件的symlinks，在multi-user.target.wants中。在coreos中，unit files一般位于/etc/systemd/system中，这个文件系统是可读写的。</li>
+<li>sudo systemctl status xx.service 查看某个服务的状态。</li>
+<li>sudo systemctl start xx.service</li>
+<li>sudo systemctl stop xx.service</li>
+<li>sudo systemctl kill xx.service</li>
+<li>sudo systemctl restart xx.service</li>
+<li>sudo systemctl daemon-reload 如果重启一个修改了service文件的服务，你必须reload service文件</li>
 </ul>
 
+
+<p>systemd由两个基本概念组成，unit和target。unit是一个配置文件，用来描述想要跑的进程的一些参数。target是一个grouping mechanism，用来允许systemd在同一时间起多个进程。systemd是coreos上启动的第一个进程。systemd进程读取不同的target，运行这些进程。每一个target一般是对unit文件的一个symlinks的集合，当运行systemctl enable foo.service 的时候，就会创建一个指向这个unit文件的symlinks，在multi-user.target.wants中。</p>
+
+<p>在coreos中，unit files一般位于/etc/systemd/system中，这个文件系统是可读写的。</p>
 
 <p>看个基本的例子。</p>
 
@@ -229,8 +238,24 @@ git我们之前也介绍过了，git就是一个版本控制工具，而具备�
 </span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
 
 
-<p>after和requires，这个基本定义了运行这个程序在哪个区间里，上面的例子就是说，只有在docker.service运行起来之后，才可以运行这个东西。execstart 在执行这个unit的时候，要干什么事情。这个进程的pid就是systemd监控的用来判断进程是否挂掉的进程。不要跑container用-d参数，这个参数会阻止container用这个pid的子进程来运行。这样systemd会认为这个进程已经退出了，那么这个unit也会被停止。wantedby指出这个unit是哪个targt的一部分。
-- sudo systemctl enable /etc/systemd/system/hello.service会创建一个symlink。- sudo systemctl start hello.service- journalctl -f -u hello.service会读取hello.service的输出。- ExecStartPre 执行execstart之前要执行的命令。- execstart 这个unit的主要的执行命令。- execstartpost 当execstart执行结束，执行的命令。- execreload 当执行systemctl reload xx.service的时候，会执行的命令。- execstop 当unit被认为失败，或者执行systemctl stop xx.service的时候，执行的命令。- execstoppost 当execstop执行完成后，执行的操作。- RestartSec 当重启一个服务的时候，要睡眠多少秒，当预防失败的服务没100ms自己尝试restart的情况。- =-是忽视这条命令产生的错误。当我们删除一个不存在的container的时候，会报没有这个container错误，但是我们只是保险起见，所以这个并不能称为错误。</p>
+<p>after和requires，这个基本定义了运行这个程序在哪个区间里，上面的例子就是说，只有在docker.service运行起来之后，才可以运行这个东西。
+execstart 在执行这个unit的时候，要干什么事情。这个进程的pid就是systemd监控的用来判断进程是否挂掉的进程。不要跑container用-d参数，这个参数会阻止container用这个pid的子进程来运行。这样systemd会认为这个进程已经退出了，那么这个unit也会被停止。
+wantedby指出这个unit是哪个targt的一部分。</p>
+
+<ul>
+<li>sudo systemctl enable /etc/systemd/system/hello.service会创建一个symlink。</li>
+<li>sudo systemctl start hello.service</li>
+<li>journalctl -f -u hello.service会读取hello.service的输出。</li>
+<li>ExecStartPre 执行execstart之前要执行的命令。</li>
+<li>execstart 这个unit的主要的执行命令。</li>
+<li>execstartpost 当execstart执行结束，执行的命令。</li>
+<li>execreload 当执行systemctl reload xx.service的时候，会执行的命令。</li>
+<li>execstop 当unit被认为失败，或者执行systemctl stop xx.service的时候，执行的命令。</li>
+<li>execstoppost 当execstop执行完成后，执行的操作。</li>
+<li>RestartSec 当重启一个服务的时候，要睡眠多少秒，当预防失败的服务没100ms自己尝试restart的情况。</li>
+<li>=-是忽视这条命令产生的错误。当我们删除一个不存在的container的时候，会报没有这个container错误，但是我们只是保险起见，所以这个并不能称为错误。</li>
+</ul>
+
 ]]></content>
   </entry>
   
@@ -1693,7 +1718,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#x6f;&#58;&#103;&#x69;&#x74;&#64;&#x67;&#105;&#x74;&#x2e;&#99;&#111;&#109;">&#x67;&#x69;&#116;&#x40;&#x67;&#105;&#x74;&#46;&#x63;&#111;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#x69;&#108;&#x74;&#x6f;&#x3a;&#x67;&#105;&#116;&#x40;&#x67;&#x69;&#116;&#x2e;&#x63;&#111;&#109;">&#103;&#105;&#116;&#64;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
