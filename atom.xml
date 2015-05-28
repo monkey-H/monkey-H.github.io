@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-05-24T13:49:06+08:00</updated>
+  <updated>2015-05-28T08:27:09+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -12,6 +12,108 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台四]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-4/"/>
+    <updated>2015-05-28T07:53:03+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-4</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+
+<!--more-->
+
+
+<h3>fleet 集群部署</h3>
+
+<p>前面已经基本把dockerfile转换为了fleet的unit，我们是通过两个unit的形式，一个用来build和push基本image，一个用来pull和run这个image。
+那么，既然有了unit，其实跑起来就很容易了，用fleetctl start unit.service就可以了，但是，跑起来之后，我们发现一个比较严肃的问题，我们无法返回跑起来的容器的端口号！fleet有个命令行工具，叫做fleetctl，通过fleetctl &ndash;help查看所有的命令。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/iwanna/fleetctl--help_zpsmnhrgbo8.png" alt="fleetctl --help" />
+我们发现，我们只能找到fleetctl list-units这个命令来返回有关已经部署的应用的信息。然而，这里面只能看到跑着的应用的ip地址，并没有更加详细的信息，比如端口号。
+<img src="http://i1066.photobucket.com/albums/u407/5681713/iwanna/list-units_zps1hn0chr3.png" alt="list-units" />
+但是，这种问题怎么会难得到我呢？我想了想，想到了自认为一个很天才的想法。我每次通过fleetctl部署应用的时候，我不知道他会部署到哪里，所以再去寻找他，返回他的端口号是非常麻烦的，但是，我可以在部署的时候，就找到部署的应用的ip和端口号，然后把这些信息写到etcd里面，反正etcd是一个用来存储键值对的。这样，我如果想知道这个应用部署在哪个机器上，只要去etcd里面去查，因为etcd是全局共享的嘛，这就简单了。果然，我是个天才。然后，由于我在后面遇到了一个问题，发现相同的程序，部署的时候，有时候会写入etcd，有的时候不会写入，这个问题就比较烦人了，也比较容易想到为什么，这样肯定就是因为部署的时候，有的时候部署的慢，还没有部署完就去写，肯定没写成功，部署快的时候就可以写成功。我去查这个问题的时候，无意间浏览到官网的文档，发现官网其实早就已经提供了一个机制，用来实现我刚刚的想法，是使用了BindsTo和MachineOf这两个东西。具体我们下面来说说看。
+思路和我的思路是一样的，不同之处在于，官网的这个机制，并不是在部署应用的时候就去写etcd，而是在部署完成后，通过MachineOf，找到部署应用的那个机器，然后再开启一个unit，这个unit是干嘛的？就是用来写etcd的，我之前说不知道应用什么时候部署成功，那么官网就是用一个无尽循环的方式，一直不停地去读这个应用，然后去写etcd的方式完成的。BindsTo的思想就是把这个写etcd的unit和部署应用的unit绑在一起，后面那个unit stop的时候，前面那个也stop，但是反过来就不成立了。
+具体代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#部署应用的unit
+</span><span class='line'>[Unit]
+</span><span class='line'>Description=${APP}
+</span><span class='line'>Requires=docker.service
+</span><span class='line'>After=docker.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>TimeoutStartSec=0
+</span><span class='line'>ExecStartPre=-/usr/bin/docker pull $RIGISTRY/${APP}_image
+</span><span class='line'>ExecStart=/usr/bin/docker run --rm -P --name $APP $RIGISTRY/${APP}_image
+</span><span class='line'>ExecStop=/usr/bin/docker stop $APP
+</span><span class='line'>
+</span><span class='line'>[X-Fleet]
+</span><span class='line'>MachineID=6182ab18ffa44912a1e773914936105f
+</span><span class='line'>
+</span><span class='line'>#写etcd的unit
+</span><span class='line'>[Unit]
+</span><span class='line'>Description=${APP}_discovery
+</span><span class='line'>BindsTo=$APP.service
+</span><span class='line'>After=$APP.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>ExecStart=/bin/sh -c "while true; do appport=\$(docker inspect --format='' $APP); etcdctl set /services/$APP/\"%H\" '{\"host\": \"%H\", \"port\": '\$appport'}' --ttl 60; sleep 45; done"
+</span><span class='line'>ExecStop=/usr/bin/etcdctl rm /services/$APP/"%H"
+</span><span class='line'>
+</span><span class='line'>[X-Fleet]
+</span><span class='line'>MachineOf=$APP.service
+</span><span class='line'>
+</span><span class='line'>#先后运行
+</span><span class='line'>fleetctl submit $WORKDIR/$APP.service $WORKDIR/${APP}_discovery.service
+</span><span class='line'>fleetctl start $WORKDIR/$APP.service &gt; /dev/null
+</span><span class='line'>fleetctl start $WORKDIR/${APP}_discovery.service &gt; /dev/null
+</span><span class='line'>
+</span><span class='line'>#运行一段时间后，查看是不是写成功了。
+</span><span class='line'>sleep 30
+</span><span class='line'>hello=$(etcdctl ls /services/$APP)
+</span><span class='line'>world=$(etcdctl get $hello)
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[设计自己的paas平台三]]></title>
@@ -28,10 +130,11 @@
 <h3>整体流程</h3>
 
 <p>客户端，用户创建一个新的git，或者修改一个已经存在的git repository，然后git remote add iwanna iwanna@ip:appname，然后，git push iwanna master。实际上执行了ssh iwanna@ip git-receive-pack &lsquo;app&rsquo;
-这个时候，触发服务器端，用户iwanna用户路径下的.ssh/authorized_keys，找里面对应的rsa key，这个时候，我们要修改其中的rsa key，在前面添加ssh forced command，使得他能够进入我们希望的进入点。比如command=&ldquo;/home/iwanna/iwanna $SSH_ORIGIN_COMMAND&rdquo; rsa-key。这样就去找/home/iwanna/iwanna这个脚本，执行这个脚本。那么这个脚本要写什么事情呢？
+这个时候，触发服务器端，用户iwanna用户路径下的.ssh/authorized_keys，找里面对应的rsa key，这个时候，我们要修改其中的rsa key，在前面添加ssh forced command，使得他能够进入我们希望的进入点。比如command=&ldquo;/home/iwanna/iwanna $SSH_ORIGINAL_COMMAND&rdquo; rsa-key。这样就去找/home/iwanna/iwanna这个脚本，执行这个脚本。那么这个脚本要写什么事情呢？
 首先，我们要明确几个设计理念。第一，我们要把git server作为单独的一个容器，用户push的时候，就是push到了这个git server里面，我们要部署的时候，再git clone到一个容器里面，在这里面部署。其次，我们要有独立的registry，这个registry就是专门用来存储我们build的镜像的。最后，要注意我们是在多个host主机下做的这件事情，关于信息的返回就要多加注意。
-我还没有思考好怎么把git server放在一个容器里面，所以，我们这里就先部署在coreos里面来先做个试验，想好了，后面会补上这一部分。
-首先，我们在所在的host的coreos系统里面看看有没有用来放git repository的路径和app的路径，如果没有，先建好。这种情况在部署第一个应用的时候会出现，在以后弄好一键式部署的时候，这一步可以放在部署阶段。</p>
+我还没有思考好怎么把git server放在一个容器里面，所以，我们这里就先部署在coreos里面来先做个试验，想好了，后面会补上这一部分。</p>
+
+<p>首先，我们在所在的host的coreos系统里面看看有没有用来放git repository的路径和app的路径，如果没有，先建好。这种情况在部署第一个应用的时候会出现，在以后弄好一键式部署的时候，这一步可以放在部署阶段。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -83,8 +186,9 @@
 
 
 <p>attention: 关于如何判断是否为最新，这里还没有去查，等查好了，这里会修改。
-已经把应用的文件下载下来了，接下来的就是部署它了。我们这里的协同语言还比较简单，我们就只是部署用Dockerfile写的应用。基本思路应该是简单的，把Dockerfile转变为fleetctl可以理解的方式，然后用fleetctl部署，返回部署应用的机器的ip和端口号即可。关于解读Dockerfile中某些特殊的命令，我们之后再详细解释。
-coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的，我们也把服务写在这个目录下。我们这里不考虑Dockerfile中的命令，只是部署一个最简单的应用，那么，Unit和Install中应该就是常规的标志，Service中，只要部署这个应用就可以了。如下：</p>
+已经把应用的文件下载下来了，接下来的就是部署它了。我们这里的协同语言还比较简单，我们就只是部署用Dockerfile写的应用。基本思路应该是简单的，把Dockerfile转变为fleetctl可以理解的方式，然后用fleetctl部署，返回部署应用的机器的ip和端口号即可。关于解读Dockerfile中某些特殊的命令，我们之后再详细解释。</p>
+
+<p>coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的，我们也把服务写在这个目录下。我们这里不考虑Dockerfile中的命令，只是部署一个最简单的应用，那么，Unit和Install中应该就是常规的标志，Service中，只要部署这个应用就可以了。如下：</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -1936,7 +2040,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#x69;&#108;&#116;&#111;&#x3a;&#x67;&#x69;&#x74;&#64;&#x67;&#x69;&#116;&#46;&#99;&#111;&#109;">&#x67;&#105;&#x74;&#64;&#x67;&#x69;&#x74;&#x2e;&#x63;&#111;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#97;&#x69;&#108;&#x74;&#x6f;&#58;&#x67;&#x69;&#116;&#x40;&#x67;&#105;&#116;&#46;&#99;&#x6f;&#109;">&#x67;&#105;&#x74;&#x40;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>

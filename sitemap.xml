@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://monkey-h.github.io/blog/my-paas-4/</loc>
+    <lastmod>2015-05-28T07:53:03+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://monkey-h.github.io/blog/my-paas-3/</loc>
     <lastmod>2015-05-24T12:20:17+08:00</lastmod>
   </url>

@@ -94,10 +94,11 @@
 <h3>整体流程</h3>
 
 <p>客户端，用户创建一个新的git，或者修改一个已经存在的git repository，然后git remote add iwanna iwanna@ip:appname，然后，git push iwanna master。实际上执行了ssh iwanna@ip git-receive-pack &lsquo;app&rsquo;
-这个时候，触发服务器端，用户iwanna用户路径下的.ssh/authorized_keys，找里面对应的rsa key，这个时候，我们要修改其中的rsa key，在前面添加ssh forced command，使得他能够进入我们希望的进入点。比如command=&ldquo;/home/iwanna/iwanna $SSH_ORIGIN_COMMAND&rdquo; rsa-key。这样就去找/home/iwanna/iwanna这个脚本，执行这个脚本。那么这个脚本要写什么事情呢？
+这个时候，触发服务器端，用户iwanna用户路径下的.ssh/authorized_keys，找里面对应的rsa key，这个时候，我们要修改其中的rsa key，在前面添加ssh forced command，使得他能够进入我们希望的进入点。比如command=&ldquo;/home/iwanna/iwanna $SSH_ORIGINAL_COMMAND&rdquo; rsa-key。这样就去找/home/iwanna/iwanna这个脚本，执行这个脚本。那么这个脚本要写什么事情呢？
 首先，我们要明确几个设计理念。第一，我们要把git server作为单独的一个容器，用户push的时候，就是push到了这个git server里面，我们要部署的时候，再git clone到一个容器里面，在这里面部署。其次，我们要有独立的registry，这个registry就是专门用来存储我们build的镜像的。最后，要注意我们是在多个host主机下做的这件事情，关于信息的返回就要多加注意。
-我还没有思考好怎么把git server放在一个容器里面，所以，我们这里就先部署在coreos里面来先做个试验，想好了，后面会补上这一部分。
-首先，我们在所在的host的coreos系统里面看看有没有用来放git repository的路径和app的路径，如果没有，先建好。这种情况在部署第一个应用的时候会出现，在以后弄好一键式部署的时候，这一步可以放在部署阶段。</p>
+我还没有思考好怎么把git server放在一个容器里面，所以，我们这里就先部署在coreos里面来先做个试验，想好了，后面会补上这一部分。</p>
+
+<p>首先，我们在所在的host的coreos系统里面看看有没有用来放git repository的路径和app的路径，如果没有，先建好。这种情况在部署第一个应用的时候会出现，在以后弄好一键式部署的时候，这一步可以放在部署阶段。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -149,8 +150,9 @@
 
 
 <p>attention: 关于如何判断是否为最新，这里还没有去查，等查好了，这里会修改。
-已经把应用的文件下载下来了，接下来的就是部署它了。我们这里的协同语言还比较简单，我们就只是部署用Dockerfile写的应用。基本思路应该是简单的，把Dockerfile转变为fleetctl可以理解的方式，然后用fleetctl部署，返回部署应用的机器的ip和端口号即可。关于解读Dockerfile中某些特殊的命令，我们之后再详细解释。
-coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的，我们也把服务写在这个目录下。我们这里不考虑Dockerfile中的命令，只是部署一个最简单的应用，那么，Unit和Install中应该就是常规的标志，Service中，只要部署这个应用就可以了。如下：</p>
+已经把应用的文件下载下来了，接下来的就是部署它了。我们这里的协同语言还比较简单，我们就只是部署用Dockerfile写的应用。基本思路应该是简单的，把Dockerfile转变为fleetctl可以理解的方式，然后用fleetctl部署，返回部署应用的机器的ip和端口号即可。关于解读Dockerfile中某些特殊的命令，我们之后再详细解释。</p>
+
+<p>coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的，我们也把服务写在这个目录下。我们这里不考虑Dockerfile中的命令，只是部署一个最简单的应用，那么，Unit和Install中应该就是常规的标志，Service中，只要部署这个应用就可以了。如下：</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -329,6 +331,8 @@ coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的
         <a class="basic-alignment left" href="/blog/my-paas-2/" title="Previous Post: 设计自己的paas平台二">&laquo; 设计自己的paas平台二</a>
       
       
+        <a class="basic-alignment right" href="/blog/my-paas-4/" title="Next Post: 设计自己的paas平台四">设计自己的paas平台四 &raquo;</a>
+      
     </p>
   </footer>
 </article>
@@ -340,6 +344,10 @@ coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/my-paas-4/">设计自己的paas平台四</a>
+      </li>
     
       <li class="post">
         <a href="/blog/my-paas-3/">设计自己的paas平台三</a>
