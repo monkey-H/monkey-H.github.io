@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>设计自己的paas平台五 - Welcome to monkey-H&#8217;s blog</title>
+  <meta name="author" content="monkey-H">
+
+  
+  <meta name="description" content="写在前面 在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://monkey-h.github.io/blog/my-paas-5/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+  
+    <h2>学习日记</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="monkey-h.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">设计自己的paas平台五</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-06-02T10:04:07+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2015</span></span> <span class='time'>10:04 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h3>写在前面</h3>
+
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+
+<!--more-->
+
+
+<h3>自发现服务</h3>
+
+<p>如果我们在客户端git push的时候，如果这个应用已经部署好了，并且，部署的应用是最新的版本，我们是不需要再次部署的，直接返回部署好的应用的ip地址和端口就可以了。那么，是怎么做到的呢？我们的想法是，首先，在我们push之后，我们要在某一个地方部署，在部署的时候，肯定要先把应用git clone下来，那么我们假如之前已经部署过了，那么这个地方肯定就已经有了这个应用的代码，然后我们在这个文件夹下，git pull一下，如果提示，已经不是最新版本的应用，那么我们就重新部署。假如已经是最新的应用文件，那么接下来，我们就继续判断这个应用是否已经正确部署，如果是的，就返回正确部署的应用的ip和端口号，如果没有，就重新部署。关于如何返回正确的端口号和ip信息，因为我们在每次部署后都是把部署好的应用的ip和端口号写到etcd键值对服务中，只要去里面去读就可以了。代码如下。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>if [ -d $APPDIR/$APP ]; then
+</span><span class='line'>  cd $APPDIR/$APP
+</span><span class='line'>  update_new=$(git pull)
+</span><span class='line'>  cd  
+</span><span class='line'>  if [ "$update_new" = "Already up-to-date." ]; then
+</span><span class='line'>      if [ $(etcdctl get /services/coreos1/$APP) ]; then
+</span><span class='line'>          ipport_etcd=$(etcdctl get /services/coreos1/$APP)
+</span><span class='line'>          exit
+</span><span class='line'>      elif [ $(etcdctl get /services/coreos2/$APP) ]; then
+</span><span class='line'>          ipport_etcd=$(etcdctl get /services/coreos2/$APP)
+</span><span class='line'>                        exit
+</span><span class='line'>      elif [ $(etcdctl get /services/coreos3/$APP) ]; then
+</span><span class='line'>          ipport_etcd=$(etcdctl get /services/coreos3/$APP)
+</span><span class='line'>                        exit
+</span><span class='line'>        else
+</span><span class='line'>          sudo rm -r $APPDIR/$APP
+</span><span class='line'>            mkdir $APPDIR/$APP
+</span><span class='line'>            git clone $GITDIR/$APP $APPDIR/$APP
+</span><span class='line'>      fi
+</span><span class='line'>  else
+</span><span class='line'>      sudo rm -r $APPDIR/$APP
+</span><span class='line'>      mkdir $ADDDIR/$APP
+</span><span class='line'>      git clone $GITDIR/$APP $APPDIR/$APP
+</span><span class='line'>  fi
+</span><span class='line'>else
+</span><span class='line'>  mkdir $APPDIR/$APP
+</span><span class='line'>  git clone $GITDIR/$APP $APPDIR/$APP
+</span><span class='line'>fi
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>也许你会很奇怪，为什么在判断应用已经是最新的，但是没有正确部署的时候，为什么要先把应用文件删除之后重新下载进行部署呢？这就是我们之后要实现的，支持maven规范的应用的支持了。</p>
+
+<h3>支持maven规范的paas</h3>
+
+<p>maven是一个很流行的一种版本规范吧，用我导师的话就是，“很简单的”，确实，如果只是想知道怎么用，还是很简单的，可以看看<a href="https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html">这里</a>，一个5分钟的tutorial，大概就是一个应用分为以下几个文件夹。
+- src 源代码，程序的源代码都是写在这里面的。
+- pom.xml 一个文件，里面是关于你的这个应用所依赖的环境的描述，当然，你的依赖环境的描述要按照他的要求和规范写。
+- profile 一个文件，这个是一个执行命令，是你程序的入口。就是maven在打包好你的应用之后，会去执行这个命令。</p>
+
+<p>我的想法也很简单。首先，我们先制作一个支持maven的基础镜像。其实这个基础镜像只要在ubuntu的基础镜像上加两个东西就可以了。第一个是java环境，这个不用说也知道，如果没有java环境，maven都装不了。第二个也就是maven了，关于制作基础镜像的过程我们这里就不在描述了，没什么难点，唯一的难点就是我基础文档没有看好，没有充分利用ENV这个dockerfile的参数，浪费了一些时间。
+有了maven的基础镜像之后，接下来就是把客户的程序拷贝进去，注意，不要用<code>COPY * /app</code>这种方式，这种方式会拷贝当前目录下所有的文件，和文件夹内部的内容，我没有更好的解决这个问题的办法，因为他的机制就是不支持，我的解决办法就是我指定要拷贝的文件名，这种拷贝方式是拷贝的文件。当拷贝进去之后，就可以用mvn package打包文件，然后把profile写到Dockerfile的Entrypoint里面，这样，新的Dockerfile就产生了，就可以部署了。代码如下。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>if [ ! -f $APPDIR/$APP/Dockerfile ]; then
+</span><span class='line'>  if [ -f $APPDIR/$APP/pom.xml ]; then
+</span><span class='line'>      sudo touch $APPDIR/$APP/Dockerfile
+</span><span class='line'>      sudo chmod o+w $APPDIR/$APP/Dockerfile
+</span><span class='line'>      cat &gt; $APPDIR/$APP/Dockerfile &lt;&lt;EOF
+</span><span class='line'>FROM docker.iwanna.xyz:5000/hmonkey/maven
+</span><span class='line'>MAINTAINER hmonkey &lt;5681713@qq.com&gt;
+</span><span class='line'>
+</span><span class='line'>COPY pom.xml /app/pom.xml
+</span><span class='line'>COPY src /app/src
+</span><span class='line'>COPY profile /app/profile
+</span><span class='line'>COPY data /app/data
+</span><span class='line'>WORKDIR /app
+</span><span class='line'>RUN mvn package
+</span><span class='line'>ENTRYPOINT ["sh", "/app/profile"]
+</span><span class='line'>EOF
+</span><span class='line'>  else 
+</span><span class='line'>      echo "anything else"
+</span><span class='line'>  fi
+</span><span class='line'>fi</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这也回答了上面，为什么要rm文件夹的问题，因为如果不rm，maven的Dockerfile会在第一次执行之后添加进去，如果你不rm掉，即使你有更新，也不会判断这是一个maven程序，因为这里面有了Dockerfile。还有就是我觉得maven这个东西这样做是不够的，或者我这种实现方式的问题，不能COPY所有的事情，所以我们这里加了一个data文件夹，专门用来存储一些数据。这可以说是我的一种机制。
+还有一个问题就是，如何返回数据值的问题，你这个应用总有一个计算结果，那么这个结果放在哪里呢？怎么返回给用户呢？这里还没有想清楚，后面我们会具体思考。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">monkey-H</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-06-02T10:04:07+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2015</span></span> <span class='time'>10:04 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/my-paas-5/" data-via="" data-counturl="http://monkey-h.github.io/blog/my-paas-5/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/my-paas-4/" title="Previous Post: 设计自己的paas平台四">&laquo; 设计自己的paas平台四</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/my-paas-5/">设计自己的paas平台五</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-4/">设计自己的paas平台四</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-3/">设计自己的paas平台三</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-2/">设计自己的paas平台二</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-1/">设计自己的paas平台一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/hadoop-4/">图的三角形计数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/bash-trick/">Bash 脚本语言学习收获</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/hello-world/">Hello World</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - monkey-H -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+<p>
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<span id="busuanzi_container_site_uv">
+    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
