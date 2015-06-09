@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-06-08T09:46:27+08:00</updated>
+  <updated>2015-06-09T10:05:06+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -12,6 +12,53 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台七]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-7/"/>
+    <updated>2015-06-09T07:45:41+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-7</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+
+<!--more-->
+
+
+<h3>单应用多实例 VS 一组类似应用</h3>
+
+<p>我觉得，老板的理解不对。需求是这样的，一个应用，需要启动多次，但是每次启动的命令中的某个参数不同。那么，对传统意义上而言，这几个应用就是不同的应用，不能说是同一个应用的不同实例。对我们现在设计的paas平台而言，就应该是建立几个不同的文件夹，代表你要起的应用的个数，里面资源可以一样，但是你的启动命令不一样，这样就起来不同的应用了，当然，我也承认，这样确实比较麻烦。</p>
+
+<p>所以，我思考了一下，单应用多实例和一群类似的应用是不一样的。单应用多实例，应该是同一个应用，完全相同，启动多个实例，这样的目的可能是为了比较同一个应用多次计算的结果是否一致，或者考虑到可靠性，即使其中的一个应用实例死掉，也是可以访问等。而一群类似的应用，可能就是因为他们的计算资源一致，或者只有起始命令不一样而已。那么，我们就针对这两个需求，做不同的事情。</p>
+
+<h3>单应用多实例</h3>
+
+<p>在我们的paas平台中，应该有两个地方需要体现。
+第一，是在部署应用之前。在我们的源代码文件中，我们有个profile的文件，我们上篇文章中说过，可以通过在里面添加参数的形式来实现。我们这里就是增加了一个新的参数，scale。这个scale，就是单应用要启动的实例个数。然后，在解读profile文件的时候，读出这个值。至于启动部分，fleet有个机制可以满足，所谓的高可用应用的部署。是关于submit myapp@.service，启动的时候，启动start myapp@%i.service这种方式，这里的%i是一个数字，字母，或者其他，在service文件中，可以通过%i访问。启动的个数就通过一个for循环就可以了。代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>```
+</span><span class='line'>毕竟并不是所有的用户都是程序员，都希望看到底层的显示，所以我们为之设计了一个web manager，虽然很丑，但是还在规划中。其主要思想就是通过fleetctl --endpoint机制，远程访问fleet里面的信息。那么，这个web manager也就是第二个地方我们要考虑的点。在这个地方，应该加一个按钮，这个按钮的作用就比较简单，就是单纯的扩大实例的个数。其中要注意的就是实例命名的问题，因为不能重复，在我们现在设计的paas平台中，如果应用重复，就是单纯的覆盖老应用，还是很不友好的，我们后面估计会花一点时间，单独思考一下关于命名冲突的问题。
+</span><span class='line'>
+</span><span class='line'>###一组类似应用
+</span><span class='line'>在我们的web界面中，我们有一个部署应用的界面。这个是怎么实现的呢？在你需要部署这个应用的时候，需要输入要部署的应用的url。得到这个url之后，我们这么做。</span></code></pre></td></tr></table></div></figure>
+
+
+<p>git clone git@url
+git remote add iwanna iwanna@ip:app-name
+git push iwanna master
+&#8220;`
+稍微有点常识的人，一看就知道这是在干嘛。其实就是下载下来源码，然后push到我们的paas平台中去。同样的，我们这里部署一组类似应用的时候，也采用这种方式。
+在某一个应用下面，点击部署相似应用的按钮，弹出一个对话框，需要你输入重新启动的命令。得到这个命令之后，我们就拿到了两样东西。第一，这组相似应用的名字，第二，这组相似应用的新命令，够了。
+然后我们接下来要做的事情就是，按照相似应用的名字，把这个相似应用的文件下载下来，修改其中profile的command命令，重新push。当然，还是一个不能忽略的问题，命名问题。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[设计自己的paas平台六]]></title>
@@ -2314,7 +2361,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#108;&#116;&#x6f;&#58;&#103;&#105;&#x74;&#64;&#103;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#109;">&#x67;&#105;&#x74;&#x40;&#103;&#x69;&#x74;&#46;&#99;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#x69;&#x6c;&#x74;&#x6f;&#x3a;&#x67;&#105;&#x74;&#64;&#x67;&#105;&#x74;&#x2e;&#x63;&#111;&#109;">&#x67;&#105;&#x74;&#x40;&#103;&#105;&#x74;&#x2e;&#99;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
