@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-06-09T15:18:54+08:00</updated>
+  <updated>2015-06-10T09:08:39+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -12,6 +12,59 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台八]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-8/"/>
+    <updated>2015-06-10T07:08:09+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-8</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+
+<!--more-->
+
+
+<h3>支持mpi应用</h3>
+
+<p>我们之前花了那么长时间搭建flannel，配置mpi，跑mpi benchmark，时间可不是白花的，我们当然要把这个东西放到我们的paas平台之上。
+我们先思考一下，我们这个paas平台已经做了什么东西，可以支持哪几种类型的应用。
+- Dockerfile
+- pom.xml
+- profile</p>
+
+<p>这三种，是我们最早可以支持的应用。对应来说，Dockerfile是最简单的形式，这是我们直接使用了Docker的规范，coreos原生支持Docker，这种形式来实现的，此处略过。第二种形式pom.xml，我们原本打算支持maven工程，所以有这么一个东西，如果工程里没有Dockerfile，但是有pom.xml，我们就用maven的镜像去mvn package这个工程，然后用profile里面的东西来跑。第三种，刚开始的时候只是一个权宜之计，本来是为了执行一些简单的脚本，不想把一些简单的应用转换为maven而存在的，但是后来发现其实这种东西非常有用，就直接保留了下来。
+好的，那么，如果加入支持mpi的应用，那么mpi的这种格式规范应该和谁并列呢？是和上面叙述的这三个工程格式并列？还是在profile里面写一条支持mpi格式的一些判断？
+我们最终的选择是，和上面这三种格式并列。</p>
+
+<h3>mpi格式边排</h3>
+
+<p>既然和上面三个对应了，那么像Dockerfile，pom.xml一样，我们要有个文件指示这是一个mpi应用，没有想到更好的名字，我们就叫mpi.xml文件好了。工程里如果有这个文件，我们就视为mpi应用。在mpi.xml里面，我们要有哪些东西呢？我们知道，如果要跑一个mpi应用，首先，我们要先编译，<code>mpicc ${APP}.c -o $APP</code>，然后，运行<code>mpirun -hostfile hostfile -n 4 $APP</code> 那么，我们的格式规范里，首先要有要编译的文件的名字，应用的名字（$APP_MASTER），要跑的节点的个数，至于host列表就不需要提供了，我们自动给他生成需要的节点的个数的容器。结构如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>from: ${APP}.c
+</span><span class='line'>to: ${APP}
+</span><span class='line'>hosts: 4</span></code></pre></td></tr></table></div></figure>
+
+
+<p>暂时就这些吧，跑一个hello world的例子足够了，等以后有了新的需求，或者为了更加完善，我们再加。</p>
+
+<h3>paas解读mpi.xml</h3>
+
+<p>ok，git push上去，解释脚本读取工程文件，遇到mpi.xml，判定为mpi工程。然后怎么做呢？我们都知道，我们之前部署的应用都是单节点的，那个比较简单，但是现在这个是多节点的，我们需要先跑起来hosts，然后master要依赖host列表来寻找slaves，然后在上面跑应用。
+那么，首先，我们要先开一个容器，把mpi工程里的src文件读进去，里面放的主要是源代码，包含我们的${APP}.c文件。当然了别的文件，像数据data文件夹也都要读进去。然后在里面<code>mpicc ${APP}.c -o ${APP}</code>。
+接着，我们要把刚刚那个container打包成一个镜像，上传到registry上面去，当然，这两步也可以用一个Dockerfile来解决。
+再者，我们已经有了基础镜像，接下来就是以这个基础镜像为镜像，跑n个container作为slave，当然，这个要求我们的coreos cluster已经正确安装了flannel，因为我们要通过flannel来实现不同host节点上的container进行通信。这里面最难的部分是如何返回跑起来的container的ip地址。
+最后，我们已经得到了host列表，我们只要开动一个master节点，在master节点上运行<code>mpirun --hostfile hostfile $APP</code>就可以了。
+这是我的想法，还没有具体实现，等实现了，补上源代码。
+关于如何返回ip地址，我暂时的想法是，并不通过etcd，虽然也可以，但是由于etcd存在一定的延迟，我们后面会通过etcd来公布已经部署的应用，但是返回host列表，我想在每次成功部署一个container之后，就用docker inspcet (中间的参数我忘记了)，这种东西直接返回，然后启动多少个，我们就返回多少个，反正我们是集中式部署的container（但是部署的container是分布式的），收集起来比较容易。
+&#8220;`</p>
+
+<p>&#8220;`</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[设计自己的paas平台七]]></title>
@@ -110,7 +163,26 @@
 
 <p>稍微有点常识的人，一看就知道这是在干嘛。其实就是下载下来源码，然后push到我们的paas平台中去。同样的，我们这里部署一组类似应用的时候，也采用这种方式。
 在某一个应用下面，点击部署相似应用的按钮，弹出一个对话框，需要你输入重新启动的命令。得到这个命令之后，我们就拿到了两样东西。第一，这组相似应用的名字，第二，这组相似应用的新命令，够了。
-然后我们接下来要做的事情就是，按照相似应用的名字，把这个相似应用的文件下载下来，修改其中profile的command命令，重新push。当然，还是一个不能忽略的问题，命名问题。</p>
+然后我们接下来要做的事情就是，按照相似应用的名字，把这个相似应用的文件下载下来，修改其中profile的command命令，重新push。当然，还是一个不能忽略的问题，命名问题。
+伪代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>copy core@ip:/home/iwanna/apps/$APP /apps/${APP}_${NO} //这里应该是git clone，但是我们修改了服务器的入口，所以clone的时候并不是我们希望的操作，因为我们的paas平台上不只是有iwanna这一个用户，还有别的用户，所以我们这里直接用scp的方式来得到，临时的做法，后面应该会改成更加正式的做法。这里的NO是考虑到命名的问题，我们命名的规则就是，查看和这个应用已经类似的应用有几个了，然后在这数字上加一，前面加上应用名字，就是新的类似应用的名字。
+</span><span class='line'>cd /apps/${APP}_${NO}
+</span><span class='line'>#替换profile中的command
+</span><span class='line'>
+</span><span class='line'>git add *
+</span><span class='line'>git commit -m "new app"
+</span><span class='line'>git remote add iwanna iwanna@ip:${APP}_${NO}
+</span><span class='line'>git push iwanna master</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
@@ -2415,7 +2487,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#x61;&#x69;&#x6c;&#116;&#111;&#x3a;&#103;&#x69;&#116;&#x40;&#103;&#x69;&#x74;&#46;&#x63;&#111;&#109;">&#x67;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#46;&#x63;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#103;&#x69;&#x74;&#x40;&#103;&#x69;&#116;&#x2e;&#99;&#x6f;&#x6d;">&#103;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -2657,15 +2729,6 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 </li>
 </ol>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Hello World]]></title>
-    <link href="http://monkey-h.github.io/blog/hello-world/"/>
-    <updated>2015-04-28T17:46:50+08:00</updated>
-    <id>http://monkey-h.github.io/blog/hello-world</id>
-    <content type="html"><![CDATA[<p><code>hello! world</code></p>
 ]]></content>
   </entry>
   

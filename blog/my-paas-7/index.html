@@ -176,7 +176,26 @@
 
 <p>稍微有点常识的人，一看就知道这是在干嘛。其实就是下载下来源码，然后push到我们的paas平台中去。同样的，我们这里部署一组类似应用的时候，也采用这种方式。
 在某一个应用下面，点击部署相似应用的按钮，弹出一个对话框，需要你输入重新启动的命令。得到这个命令之后，我们就拿到了两样东西。第一，这组相似应用的名字，第二，这组相似应用的新命令，够了。
-然后我们接下来要做的事情就是，按照相似应用的名字，把这个相似应用的文件下载下来，修改其中profile的command命令，重新push。当然，还是一个不能忽略的问题，命名问题。</p>
+然后我们接下来要做的事情就是，按照相似应用的名字，把这个相似应用的文件下载下来，修改其中profile的command命令，重新push。当然，还是一个不能忽略的问题，命名问题。
+伪代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>copy core@ip:/home/iwanna/apps/$APP /apps/${APP}_${NO} //这里应该是git clone，但是我们修改了服务器的入口，所以clone的时候并不是我们希望的操作，因为我们的paas平台上不只是有iwanna这一个用户，还有别的用户，所以我们这里直接用scp的方式来得到，临时的做法，后面应该会改成更加正式的做法。这里的NO是考虑到命名的问题，我们命名的规则就是，查看和这个应用已经类似的应用有几个了，然后在这数字上加一，前面加上应用名字，就是新的类似应用的名字。
+</span><span class='line'>cd /apps/${APP}_${NO}
+</span><span class='line'>#替换profile中的command
+</span><span class='line'>
+</span><span class='line'>git add *
+</span><span class='line'>git commit -m "new app"
+</span><span class='line'>git remote add iwanna iwanna@ip:${APP}_${NO}
+</span><span class='line'>git push iwanna master</span></code></pre></td></tr></table></div></figure>
+
 </div>
 
 
@@ -212,6 +231,8 @@
         <a class="basic-alignment left" href="/blog/my-paas-6/" title="Previous Post: 设计自己的paas平台六">&laquo; 设计自己的paas平台六</a>
       
       
+        <a class="basic-alignment right" href="/blog/my-paas-8/" title="Next Post: 设计自己的paas平台八">设计自己的paas平台八 &raquo;</a>
+      
     </p>
   </footer>
 </article>
@@ -223,6 +244,10 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/my-paas-8/">设计自己的paas平台八</a>
+      </li>
     
       <li class="post">
         <a href="/blog/my-paas-7/">设计自己的paas平台七</a>

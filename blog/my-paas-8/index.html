@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>设计自己的paas平台八 - Welcome to monkey-H&#8217;s blog</title>
+  <meta name="author" content="monkey-H">
+
+  
+  <meta name="description" content="写在前面 在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://monkey-h.github.io/blog/my-paas-8/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+  
+    <h2>学习日记</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="monkey-h.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">设计自己的paas平台八</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-06-10T07:08:09+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:08 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h3>写在前面</h3>
+
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+
+<!--more-->
+
+
+<h3>支持mpi应用</h3>
+
+<p>我们之前花了那么长时间搭建flannel，配置mpi，跑mpi benchmark，时间可不是白花的，我们当然要把这个东西放到我们的paas平台之上。
+我们先思考一下，我们这个paas平台已经做了什么东西，可以支持哪几种类型的应用。
+- Dockerfile
+- pom.xml
+- profile</p>
+
+<p>这三种，是我们最早可以支持的应用。对应来说，Dockerfile是最简单的形式，这是我们直接使用了Docker的规范，coreos原生支持Docker，这种形式来实现的，此处略过。第二种形式pom.xml，我们原本打算支持maven工程，所以有这么一个东西，如果工程里没有Dockerfile，但是有pom.xml，我们就用maven的镜像去mvn package这个工程，然后用profile里面的东西来跑。第三种，刚开始的时候只是一个权宜之计，本来是为了执行一些简单的脚本，不想把一些简单的应用转换为maven而存在的，但是后来发现其实这种东西非常有用，就直接保留了下来。
+好的，那么，如果加入支持mpi的应用，那么mpi的这种格式规范应该和谁并列呢？是和上面叙述的这三个工程格式并列？还是在profile里面写一条支持mpi格式的一些判断？
+我们最终的选择是，和上面这三种格式并列。</p>
+
+<h3>mpi格式边排</h3>
+
+<p>既然和上面三个对应了，那么像Dockerfile，pom.xml一样，我们要有个文件指示这是一个mpi应用，没有想到更好的名字，我们就叫mpi.xml文件好了。工程里如果有这个文件，我们就视为mpi应用。在mpi.xml里面，我们要有哪些东西呢？我们知道，如果要跑一个mpi应用，首先，我们要先编译，<code>mpicc ${APP}.c -o $APP</code>，然后，运行<code>mpirun -hostfile hostfile -n 4 $APP</code> 那么，我们的格式规范里，首先要有要编译的文件的名字，应用的名字（$APP_MASTER），要跑的节点的个数，至于host列表就不需要提供了，我们自动给他生成需要的节点的个数的容器。结构如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>from: ${APP}.c
+</span><span class='line'>to: ${APP}
+</span><span class='line'>hosts: 4</span></code></pre></td></tr></table></div></figure>
+
+
+<p>暂时就这些吧，跑一个hello world的例子足够了，等以后有了新的需求，或者为了更加完善，我们再加。</p>
+
+<h3>paas解读mpi.xml</h3>
+
+<p>ok，git push上去，解释脚本读取工程文件，遇到mpi.xml，判定为mpi工程。然后怎么做呢？我们都知道，我们之前部署的应用都是单节点的，那个比较简单，但是现在这个是多节点的，我们需要先跑起来hosts，然后master要依赖host列表来寻找slaves，然后在上面跑应用。
+那么，首先，我们要先开一个容器，把mpi工程里的src文件读进去，里面放的主要是源代码，包含我们的${APP}.c文件。当然了别的文件，像数据data文件夹也都要读进去。然后在里面<code>mpicc ${APP}.c -o ${APP}</code>。
+接着，我们要把刚刚那个container打包成一个镜像，上传到registry上面去，当然，这两步也可以用一个Dockerfile来解决。
+再者，我们已经有了基础镜像，接下来就是以这个基础镜像为镜像，跑n个container作为slave，当然，这个要求我们的coreos cluster已经正确安装了flannel，因为我们要通过flannel来实现不同host节点上的container进行通信。这里面最难的部分是如何返回跑起来的container的ip地址。
+最后，我们已经得到了host列表，我们只要开动一个master节点，在master节点上运行<code>mpirun --hostfile hostfile $APP</code>就可以了。
+这是我的想法，还没有具体实现，等实现了，补上源代码。
+关于如何返回ip地址，我暂时的想法是，并不通过etcd，虽然也可以，但是由于etcd存在一定的延迟，我们后面会通过etcd来公布已经部署的应用，但是返回host列表，我想在每次成功部署一个container之后，就用docker inspcet (中间的参数我忘记了)，这种东西直接返回，然后启动多少个，我们就返回多少个，反正我们是集中式部署的container（但是部署的container是分布式的），收集起来比较容易。
+&#8220;`</p>
+
+<p>&#8220;`</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">monkey-H</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-06-10T07:08:09+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:08 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/my-paas-8/" data-via="" data-counturl="http://monkey-h.github.io/blog/my-paas-8/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/my-paas-7/" title="Previous Post: 设计自己的paas平台七">&laquo; 设计自己的paas平台七</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/my-paas-8/">设计自己的paas平台八</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-7/">设计自己的paas平台七</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-6/">设计自己的paas平台六</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-5/">设计自己的paas平台五</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-4/">设计自己的paas平台四</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-3/">设计自己的paas平台三</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-2/">设计自己的paas平台二</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-1/">设计自己的paas平台一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/hadoop-4/">图的三角形计数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/bash-trick/">Bash 脚本语言学习收获</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/hello-world/">Hello World</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - monkey-H -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+<p>
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<span id="busuanzi_container_site_uv">
+    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
