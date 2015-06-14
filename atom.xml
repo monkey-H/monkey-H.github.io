@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-06-10T09:08:39+08:00</updated>
+  <updated>2015-06-15T07:38:24+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -54,15 +54,186 @@
 <h3>paas解读mpi.xml</h3>
 
 <p>ok，git push上去，解释脚本读取工程文件，遇到mpi.xml，判定为mpi工程。然后怎么做呢？我们都知道，我们之前部署的应用都是单节点的，那个比较简单，但是现在这个是多节点的，我们需要先跑起来hosts，然后master要依赖host列表来寻找slaves，然后在上面跑应用。
-那么，首先，我们要先开一个容器，把mpi工程里的src文件读进去，里面放的主要是源代码，包含我们的${APP}.c文件。当然了别的文件，像数据data文件夹也都要读进去。然后在里面<code>mpicc ${APP}.c -o ${APP}</code>。
-接着，我们要把刚刚那个container打包成一个镜像，上传到registry上面去，当然，这两步也可以用一个Dockerfile来解决。
-再者，我们已经有了基础镜像，接下来就是以这个基础镜像为镜像，跑n个container作为slave，当然，这个要求我们的coreos cluster已经正确安装了flannel，因为我们要通过flannel来实现不同host节点上的container进行通信。这里面最难的部分是如何返回跑起来的container的ip地址。
-最后，我们已经得到了host列表，我们只要开动一个master节点，在master节点上运行<code>mpirun --hostfile hostfile $APP</code>就可以了。
-这是我的想法，还没有具体实现，等实现了，补上源代码。
-关于如何返回ip地址，我暂时的想法是，并不通过etcd，虽然也可以，但是由于etcd存在一定的延迟，我们后面会通过etcd来公布已经部署的应用，但是返回host列表，我想在每次成功部署一个container之后，就用docker inspcet (中间的参数我忘记了)，这种东西直接返回，然后启动多少个，我们就返回多少个，反正我们是集中式部署的container（但是部署的container是分布式的），收集起来比较容易。
-&#8220;`</p>
+那么，首先，我们要先开一个容器，把mpi工程里的src文件读进去，里面放的主要是源代码，包含我们的${APP}.c文件。当然了别的文件，像数据data文件夹也都要读进去。然后在里面<code>mpicc ${APP}.c -o ${APP}</code>。</p>
 
-<p>&#8220;`</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>while read line; do
+</span><span class='line'>        key=$(echo $line | cut -f 1 -d ' ')
+</span><span class='line'>        str=""
+</span><span class='line'>        value=$(echo ${line/$key/$str})
+</span><span class='line'>        case $key in
+</span><span class='line'>                from:)
+</span><span class='line'>                        FROM=$value
+</span><span class='line'>                ;;
+</span><span class='line'>                to:)
+</span><span class='line'>                        TO=$value 
+</span><span class='line'>                ;;
+</span><span class='line'>                hosts:)
+</span><span class='line'>                        HOSTS=$value
+</span><span class='line'>                ;;
+</span><span class='line'>                *)
+</span><span class='line'>                        echo "other settings"
+</span><span class='line'>        esac
+</span><span class='line'>done &lt; $APPDIR/$APP/mpi.xml
+</span><span class='line'>
+</span><span class='line'>cd /$APPDIR/$APP
+</span><span class='line'>cat &gt; $APPDIR/$APP/Dockerfile &lt;&lt;EOF
+</span><span class='line'>FROM docker.iwanna.xyz:5000/hmonkey/openmpi
+</span><span class='line'>MAINTAINER hmonkey &lt;5681713@qq.com&gt;
+</span><span class='line'>COPY src /app
+</span><span class='line'>WORKDIR /app
+</span><span class='line'>RUN mpicc $FROM -o $TO
+</span><span class='line'>EOF</span></code></pre></td></tr></table></div></figure>
+
+
+<p>接着，我们要把刚刚那个container打包成一个镜像，上传到registry上面去，当然，这两步也可以用一个Dockerfile来解决。
+再者，我们已经有了基础镜像，接下来就是以这个基础镜像为镜像，跑n个container作为slave，当然，这个要求我们的coreos cluster已经正确安装了flannel，因为我们要通过flannel来实现不同host节点上的container进行通信。这里面最难的部分是如何返回跑起来的container的ip地址。
+最后，我们已经得到了host列表，我们只要开动一个master节点，在master节点上运行<code>mpirun --hostfile hostfile $APP</code>就可以了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cat &gt; ${SLAVE_CONTAINERS} &lt;&lt;EOF
+</span><span class='line'>[Unit]
+</span><span class='line'>Description=slave containers
+</span><span class='line'>Requires=docker.service
+</span><span class='line'>After=docker.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>TimeoutStartSec=900m
+</span><span class='line'>ExecStartPre=-/usr/bin/docker stop ${APP}_slave%i
+</span><span class='line'>ExecStartPre=-/usr/bin/docker rm ${APP}_slave%i
+</span><span class='line'>ExecStartPre=-/usr/bin/docker pull $REGISTRY/${APP}_image
+</span><span class='line'>ExecStart=/usr/bin/docker run -P --name ${APP}_slave%i $REGISTRY/${APP}_image /usr/sbin/sshd -D
+</span><span class='line'>ExecStop=/usr/bin/docker stop ${APP}_slave%i
+</span><span class='line'>ExecStopPost=-/usr/bin/docker rm ${APP}_slave%i
+</span><span class='line'>
+</span><span class='line'>EOF
+</span><span class='line'>
+</span><span class='line'>fleetctl destroy ${SLAVE_CONTAINERS}
+</span><span class='line'>
+</span><span class='line'>fleetctl submit ${SLAVE_CONTAINERS}
+</span><span class='line'>
+</span><span class='line'>for ((i=1; i&lt;=$HOSTS; ++i))
+</span><span class='line'>do
+</span><span class='line'>  fleetctl destroy slaves_${APP}@$i.service &gt; /dev/null
+</span><span class='line'>  fleetctl start slaves_${APP}@$i.service &gt; /dev/null
+</span><span class='line'>done</span></code></pre></td></tr></table></div></figure>
+
+
+<p>关于如何返回ip地址，我暂时的想法是，并不通过etcd，虽然也可以，但是由于etcd存在一定的延迟，我们后面会通过etcd来公布已经部署的应用，但是返回host列表，我想在每次成功部署一个container之后，就用docker inspcet (中间的参数我忘记了)，这种东西直接返回，然后启动多少个，我们就返回多少个，反正我们是集中式部署的container（但是部署的container是分布式的），收集起来比较容易。
+上面的想法是多么的简单无知。fleetctl在部署应用的时候，是在部署应用的机器上，直接部署的，并不是集中式的部署，所以，还是要通过etcd，把部署的slave的ip地址写到etcd中，然后，再在master节点上读取，最后再运行。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cat &gt; ${DISCOVERY} &lt;&lt; EOF
+</span><span class='line'>[Unit]
+</span><span class='line'>Description=${APP}_discovery
+</span><span class='line'>BindsTo=slaves_${APP}@%i.service
+</span><span class='line'>After=slaves_${APP}@%i.service
+</span><span class='line'>
+</span><span class='line'>[Service]
+</span><span class='line'>ExecStart=/bin/sh -c "while true; do appip=\$(docker inspect --format='' ${APP}_slave%i); etcdctl set /services/mpi/$APP/slaves/slave%i \$appip --ttl 60; sleep 30; done"
+</span><span class='line'>ExecStop=/usr/bin/etcdctl rm /services/mpi/$APP/slaves/slave%i
+</span><span class='line'>
+</span><span class='line'>[X-Fleet]
+</span><span class='line'>MachineOf=slaves_${APP}@%i.service
+</span><span class='line'>EOF
+</span><span class='line'>
+</span><span class='line'>fleetctl destroy ${DISCOVERY}
+</span><span class='line'>
+</span><span class='line'>fleetctl submit ${DISCOVERY}
+</span><span class='line'>
+</span><span class='line'>for ((i=1; i&lt;=$HOSTS; ++i))
+</span><span class='line'>do
+</span><span class='line'>        fleetctl destroy discovery_${APP}@$i.service &gt; /dev/null
+</span><span class='line'>        fleetctl start discovery_${APP}@$i.service &gt; /dev/null
+</span><span class='line'>done
+</span><span class='line'>
+</span><span class='line'>HOSTLIST=$(etcdctl get services/mpi/$APP/slaves/slave1)
+</span><span class='line'>for ((i=2; i&lt;=$HOSTS; ++i))
+</span><span class='line'>do
+</span><span class='line'>  HOST=$(etcdctl get services/mpi/$APP/slaves/slave$i)
+</span><span class='line'>  HOSTLIST="${HOSTLIST},${HOST}"
+</span><span class='line'>done</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
@@ -2487,7 +2658,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#103;&#x69;&#x74;&#x40;&#103;&#x69;&#116;&#x2e;&#99;&#x6f;&#x6d;">&#103;&#x69;&#116;&#x40;&#x67;&#x69;&#x74;&#x2e;&#x63;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#111;&#58;&#x67;&#105;&#x74;&#64;&#x67;&#x69;&#116;&#46;&#x63;&#x6f;&#109;">&#103;&#x69;&#x74;&#x40;&#103;&#105;&#116;&#46;&#x63;&#x6f;&#109;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
