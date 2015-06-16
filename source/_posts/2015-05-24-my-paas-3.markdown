@@ -1,0 +1,129 @@
+---
+layout: post
+title: "设计自己的paas平台nap 3----整体流程"
+date: 2015-05-24 12:20:17 +0800
+comments: true
+categories: 
+---
+###写在前面
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
+
+###整体流程
+客户端，用户创建一个新的git，或者修改一个已经存在的git repository，然后git remote add iwanna iwanna@ip:appname，然后，git push iwanna master。实际上执行了ssh iwanna@ip git-receive-pack 'app'
+这个时候，触发服务器端，用户iwanna用户路径下的.ssh/authorized_keys，找里面对应的rsa key，这个时候，我们要修改其中的rsa key，在前面添加ssh forced command，使得他能够进入我们希望的进入点。比如command="/home/iwanna/iwanna $SSH_ORIGINAL_COMMAND" rsa-key。这样就去找/home/iwanna/iwanna这个脚本，执行这个脚本。那么这个脚本要写什么事情呢？
+首先，我们要明确几个设计理念。第一，我们要把git server作为单独的一个容器，用户push的时候，就是push到了这个git server里面，我们要部署的时候，再git clone到一个容器里面，在这里面部署。其次，我们要有独立的registry，这个registry就是专门用来存储我们build的镜像的。最后，要注意我们是在多个host主机下做的这件事情，关于信息的返回就要多加注意。
+我还没有思考好怎么把git server放在一个容器里面，所以，我们这里就先部署在coreos里面来先做个试验，想好了，后面会补上这一部分。
+
+首先，我们在所在的host的coreos系统里面看看有没有用来放git repository的路径和app的路径，如果没有，先建好。这种情况在部署第一个应用的时候会出现，在以后弄好一键式部署的时候，这一步可以放在部署阶段。
+```
+#apps in /home/iwanna/apps and git repository in /home/iwanna/gits
+[ -d /home/iwanna/gits ] || (mkdir /home/iwanna/gits)
+[ -d /home/iwanna/apps ] || (mkdir /home/iwanna/apps)
+GITDIR=/home/iwanna/gits
+APPDIR=/home/iwanna/apps
+REGISTRY=docker.iwanna.xyz:5000/iwanna
+```
+接下来，我们要先把git push的时候，git server要做的事情做了。如果本来有这个repository，那么就直接用git-shell来做，如果没有，别忘了先git init --bare他。
+```
+args=$*
+#judge if app git exist, if not git init or nothing
+[ -d $GITDIR/$APP ] || (git init --bare $GITDIR/$APP > /dev/null)
+git-shell -c "$args"
+```
+继续。已经做完了git server应该做的事情。接下来就是部署一个应用了。理论上应该也用一个容器来部署一个应用，但是，我也没有想好应该怎么做，所以，我们先用coreos系统来操纵部署一个应用。
+首先判断在coreos系统中专门用来部署应用的路径$APPDIR里面有没有部署过这个应用，如果没有，就简单了，首先创造这个路径，然后，把git server上的对应app clone下来，这样就把应用clone下来了。如果已经存在了，那么就要考虑两种情况，首先，判断这次和上次部署的有没有区别，如果本来就是最新的，那么就不用重新部署了，直接返回原来的应用的ip和端口就可以了。如果有区别，那么就删除原来的应用，重新clone新的应用。
+```
+#judge if app exist, if not clone, or how?
+if [ !-d $APPDIR/$APP ]; then
+	mkdir $APPDIR/$APP
+	git clone $GITDIR/$APP $APPDIR/$APP
+else
+	sudo rm -r $APPDIR/$APP
+	mkdir $APPDIR/$APP
+	git clone $GITDIR/$APP $APPDIR/$APP
+fi
+```
+attention: 关于如何判断是否为最新，这里还没有去查，等查好了，这里会修改。
+已经把应用的文件下载下来了，接下来的就是部署它了。我们这里的协同语言还比较简单，我们就只是部署用Dockerfile写的应用。基本思路应该是简单的，把Dockerfile转变为fleetctl可以理解的方式，然后用fleetctl部署，返回部署应用的机器的ip和端口号即可。关于解读Dockerfile中某些特殊的命令，我们之后再详细解释。
+
+coreos中，一般把要部署的应用放在/etc/systemd/systemd中，同样的，我们也把服务写在这个目录下。我们这里不考虑Dockerfile中的命令，只是部署一个最简单的应用，那么，Unit和Install中应该就是常规的标志，Service中，只要部署这个应用就可以了。如下：
+```
+WORKDIR=/etc/systemd/system
+sudo touch $WORKDIR/$APP.service
+SERVICE="$WORKDIR/$APP.service"
+sudo chmod o+w $SERVICE
+cat > $SERVICE <<EOF
+[Unit]
+Description=$APP
+Requires=docker.service
+After=docker.service
+
+[Service]
+ExecStartPre=/usr/bin/docker build -t $APP /home/core/gitrepository/$APP
+ExecStartPre=/usr/bin/docker stop $APP
+ExecStartPre=/usr/bin/docker rm $APP
+ExecStart=/usr/bin/docker run -d -P --name $APP $APP
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+但是，这个时候，实际上我们自觉回避了两个内容。
+第一，是build和run的时机。我们这里实际上是在单host上测试的，所以，这里在同一个service中既有build，也有run。实际上，如果是多host，那么就需要了。我们应该是单独一个service来build，和push到registry，然后有另一个service，用来run。所以，应该是下面这样。
+```
+WORKDIR=/etc/systemd/system
+sudo touch $WORKDIR/BUILD_${APP}.service
+BUILD_SERVICE="$WORKDIR/BUILD_${APP}.service"
+sudo chmod o+w $BUILD_SERVICE
+cat > $BUILD_SERVICE <<EOF
+[Unit]
+Description=${APP}_build
+Requires=docker.service
+After=docker.service
+
+[Service]
+ExecStartPre=-/usr/bin/docker stop $APP
+ExecStartPre=-/usr/bin/docker rm $APP
+ExecStartPre=-/usr/bin/docker rmi ${APP}_image
+ExecStartPre=/usr/bin/docker build -t $RIGISTRY/${APP}_image $APPDIR/$APP
+ExecStart=/usr/bin/docker push $RIGISTRY/${APP}_image
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+attention:这里上面的ExecStartPre里面的停止应用，删除应用，都应该是fleetctl的操作，但是我们这里还没有经过测试，所以我们这里先用docker的代替一下，后面测试通过了，这里会进行修改。
+
+然后跑应用：
+```
+sudo touch $WORKDIR/$APP.service
+SERVICE="$WORKDIR/$APP.service"
+sudo chmod o+w $SERVICE
+cat > $SERVICE <<EOF
+[Unit]
+Description=${APP}
+Requires=docker.service
+After=docker.service
+
+[Service]
+ExecStartPre=/usr/bin/docker pull $RIGISTRY/${APP}_image
+ExecStart=/usr/bin/docker run -d -P --name $APP $RIGISTRY/${APP}_image
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+第二个忽略的问题就是关于Dockerfile中命令的解读，这个也没想清楚，后面补上。
+
+然后跑起来应用。这里应该是用fleetctl跑应用，也是没有测试怎么返回跑的应用的ip和端口，后面测试了再补上。
+```
+sudo systemctl enable /etc/systemd/system/$APP.service
+sudo systemctl daemon-reload
+sudo systemctl start $APP.service
+id=$(sudo docker ps -lq)
+port=$(docker inspect --format='{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}}{{end}}' $id)
+ip=$(cat /home/core/HOST)
+echo $ip:$port
+```

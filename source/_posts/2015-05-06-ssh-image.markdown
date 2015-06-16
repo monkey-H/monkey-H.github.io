@@ -1,0 +1,36 @@
+---
+layout: post
+title: "创建不需要输入密码就可以登录的docker image"
+date: 2015-05-06 16:55:39 +0800
+comments: true
+categories: 
+---
+
+###写在前面
+ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。
+<!--more-->
+
+而rsa的工作原理是什么样子的呢？简单说来，如果a想ssh到b上去，那么a就要把自己的rsa.pub发送给b，然后，b如果接受a以后可以无密码访问我，就把这个pub key加入到authorized_keys里面去，这样以后，在a想ssh到b的时候，a会把这个信息进行加密，通过a自身的private key，而a的这个加密信息只有a的pub key才能解开，这样，b在接收到这个信息的时候，因为b拥有a的pub key，所以就可以解开，同样地，b也就知道，这真是a发来的信息，因为别的人不知道a的private key，这样b就可以直接允许a ssh进来了。
+在docker环境中，我们比较方便的地方，是可以直接制作一个镜像。我们的想法是，用一个基础镜像构建一个container，然后在这个container里面生成rsa密钥，然后，把自己的pub key直接拷到authorized_keys里面去，然后把这个container做成一个镜像，这样的话，只要从这个镜像起来的container，都可以互相无密码访问。
+首先，要用docker启用一个container
+```
+sudo docker run -ti ubuntu /bin/bash
+```
+既然要使用ssh，那么我们肯定要安装ssh。
+```
+sudo apt-get install openssh-server
+```
+然后，生成密钥，并且赋值给authorized_keys
+```
+sshkey-gen -t rsa
+```
+一直按回车，不要停。
+```
+cp /root/.ssh/id_dsa.pub /root/.ssh/authorized_keys
+```
+修改一些配置信息，修改/etc/ssh/ssh_configure文件里面的StrictHostKeyChecking ask为 no，这个配置信息是在ssh主机的时候，询问加入fingerprint的那个东西。
+然后退出container，使用docker ps -l查看刚刚退出的container的id，然后用这个container commit一个镜像。
+```
+sudo docker commit container_id image_name
+```
+那么最终生成的那个image_name，就是我们设计出来的一个image，从这个image启动不同的container之后，在开启了ssh服务的情况下，是可以相互不输入密码ssh进去的。

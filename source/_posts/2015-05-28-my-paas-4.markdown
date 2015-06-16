@@ -1,0 +1,61 @@
+---
+layout: post
+title: "设计自己的paas平台nap 4----fleet集群部署"
+date: 2015-05-28 07:53:03 +0800
+comments: true
+categories: 
+---
+
+###写在前面
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
+
+###fleet 集群部署
+前面已经基本把dockerfile转换为了fleet的unit，我们是通过两个unit的形式，一个用来build和push基本image，一个用来pull和run这个image。
+那么，既然有了unit，其实跑起来就很容易了，用fleetctl start unit.service就可以了，但是，跑起来之后，我们发现一个比较严肃的问题，我们无法返回跑起来的容器的端口号！fleet有个命令行工具，叫做fleetctl，通过fleetctl --help查看所有的命令。
+![fleetctl --help](http://i1066.photobucket.com/albums/u407/5681713/iwanna/fleetctl--help_zpsmnhrgbo8.png)
+我们发现，我们只能找到fleetctl list-units这个命令来返回有关已经部署的应用的信息。然而，这里面只能看到跑着的应用的ip地址，并没有更加详细的信息，比如端口号。
+![list-units](http://i1066.photobucket.com/albums/u407/5681713/iwanna/list-units_zps1hn0chr3.png)
+但是，这种问题怎么会难得到我呢？我想了想，想到了自认为一个很天才的想法。我每次通过fleetctl部署应用的时候，我不知道他会部署到哪里，所以再去寻找他，返回他的端口号是非常麻烦的，但是，我可以在部署的时候，就找到部署的应用的ip和端口号，然后把这些信息写到etcd里面，反正etcd是一个用来存储键值对的。这样，我如果想知道这个应用部署在哪个机器上，只要去etcd里面去查，因为etcd是全局共享的嘛，这就简单了。果然，我是个天才。然后，由于我在后面遇到了一个问题，发现相同的程序，部署的时候，有时候会写入etcd，有的时候不会写入，这个问题就比较烦人了，也比较容易想到为什么，这样肯定就是因为部署的时候，有的时候部署的慢，还没有部署完就去写，肯定没写成功，部署快的时候就可以写成功。我去查这个问题的时候，无意间浏览到官网的文档，发现官网其实早就已经提供了一个机制，用来实现我刚刚的想法，是使用了BindsTo和MachineOf这两个东西。具体我们下面来说说看。
+思路和我的思路是一样的，不同之处在于，官网的这个机制，并不是在部署应用的时候就去写etcd，而是在部署完成后，通过MachineOf，找到部署应用的那个机器，然后再开启一个unit，这个unit是干嘛的？就是用来写etcd的，我之前说不知道应用什么时候部署成功，那么官网就是用一个无尽循环的方式，一直不停地去读这个应用，然后去写etcd的方式完成的。BindsTo的思想就是把这个写etcd的unit和部署应用的unit绑在一起，后面那个unit stop的时候，前面那个也stop，但是反过来就不成立了。
+具体代码如下：
+```
+#部署应用的unit
+[Unit]
+Description=${APP}
+Requires=docker.service
+After=docker.service
+
+[Service]
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker pull $RIGISTRY/${APP}_image
+ExecStart=/usr/bin/docker run --rm -P --name $APP $RIGISTRY/${APP}_image
+ExecStop=/usr/bin/docker stop $APP
+
+[X-Fleet]
+MachineID=6182ab18ffa44912a1e773914936105f
+
+#写etcd的unit
+[Unit]
+Description=${APP}_discovery
+BindsTo=$APP.service
+After=$APP.service
+
+[Service]
+ExecStart=/bin/sh -c "while true; do appport=\$(docker inspect --format='{{range \$p, \$conf := .NetworkSettings.Ports}}{{(index \$conf 0).HostPort}}{{end}}' $APP); etcdctl set /services/$APP/\"%H\" '{\"host\": \"%H\", \"port\": '\$appport'}' --ttl 60; sleep 45; done"
+ExecStop=/usr/bin/etcdctl rm /services/$APP/"%H"
+
+[X-Fleet]
+MachineOf=$APP.service
+
+#先后运行
+fleetctl submit $WORKDIR/$APP.service $WORKDIR/${APP}_discovery.service
+fleetctl start $WORKDIR/$APP.service > /dev/null
+fleetctl start $WORKDIR/${APP}_discovery.service > /dev/null
+
+#运行一段时间后，查看是不是写成功了。
+sleep 30
+hello=$(etcdctl ls /services/$APP)
+world=$(etcdctl get $hello)
+
+```

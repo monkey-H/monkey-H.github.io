@@ -7,8 +7,9 @@ categories:
 ---
 
 ###写在前面
-
 之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。
+
+<!--more-->
 
 ###学习笔记
 
@@ -29,26 +30,25 @@ categories:
 	+ $$ bash的进程id
 	+ $! 最近执行的后台命令的进程ID
 
-
 7. 单引号可以让一些变量保持字面含义，比如echo ‘$date’ 输出是$date，而不是日期，同时，注意单引号不能嵌套单引号。但是双引号就不同了，双引号内，可以嵌套双引号，同时，如果加了$，是可以引用变量的，比如echo “$date” 输出的就不是$date，而是现在的日期。除了$，还有’’，echo “‘date’”和加$一样呢的效果。
 
 8. 一些小的trick
-echo sp{el,il,al}l 
-spell spill spall
-(大括号的优先级是最高的)
-~常被用来解析成$HOME，如~/path等。有两个特殊的应用~+代表的是当前路径，~-代表的是上一次进入的路径。
-允许通过:=的方式赋值，比如echo ${FRANKY:=FRIDY} 输出 FRIDY
-假如使用了”$(COMMAND)”的方式，那么，其中的所有字符都会被当做命令，而不会特殊处理。
-如果想在命令里进行计算，有两种方式，$((2+2)) 或者$[2+2]这两种方式，echo这两个结果，都是4
+	echo sp{el,il,al}l 
+	spell spill spall
+	(大括号的优先级是最高的)
+	~常被用来解析成$HOME，如~/path等。有两个特殊的应用~+代表的是当前路径，~-代表的是上一次进入的路径。
+	允许通过:=的方式赋值，比如echo ${FRANKY:=FRIDY} 输出 FRIDY
+	假如使用了”$(COMMAND)”的方式，那么，其中的所有字符都会被当做命令，而不会特殊处理。
+	如果想在命令里进行计算，有两种方式，$((2+2)) 或者$[2+2]这两种方式，echo这两个结果，都是4
 
 9. 这是一个神奇的命令，是替代，别名的意思，我们可以使用这个东西来简化命令。
-比如，cd ../是回到上一层目录，假如我们使用alias ..=’cd ../’，然后，以后只要打..就可以回到上一层，如果想去除这个简写，只要unalias ..就可以了。当然这个修改只是暂时的，如果想一直这么做，就需要修改./bashrc或者/etc/profile文件。
+	比如，cd ../是回到上一层目录，假如我们使用alias ..=’cd ../’，然后，以后只要打..就可以回到上一层，如果想去除这个简写，只要unalias ..就可以了。当然这个修改只是暂时的，如果想一直这么做，就需要修改./bashrc或者/etc/profile文件。
 
 10. 正则表达式
 	- . 配对单个字符
 	- ? 代表最多一个字符，要么匹配，要么没有。
 	- \* 任意多个字符，可以没有一个
-	- \+ 和*一样，但是至少要匹配一次。
+	- \+ 和\*一样，但是至少要匹配一次。
 	- {N} 精确匹配N次
 	- {N,} 精确匹配至少N次
 	- {N,M} 精确匹配N到M次即可。
@@ -58,13 +58,12 @@ spell spill spall
 	- [^ xyz] 匹配不是这三个中的字符，任意个
 	- ^xx 匹配某一行xx开头的文字
 	- xx$ 匹配某一行xx结尾的文字
-	- /<xx 某一个单词是xx开头的
-	- />xx 某一个单词是xx结尾的。
-	- \- 表示范围。
-常用的就这么多，还有很多，百度一下，google一下就出来了。
+	- <xx 某一个单词是xx开头的
+	- \>xx 某一个单词是xx结尾的。
+	- \- 表示范围。常用的就这么多，还有很多，百度一下，google一下就出来了。
 
 11. sed 是stream editor的简称，是一个编译器，具有很NB的功能。要注意的是，sed并没有修改文档的内容，只是打印修改后的文档。
-基本命令：
+	基本命令：
 	- a 在当前行下添加文本
 	- c 当前行变换内容
 	- d 删除文本
@@ -73,18 +72,18 @@ spell spill spall
 	- r 读一个文件
 	- s 查找并替代文本
 	- w 写到一个文件
-举个例子， `sed ‘/erors/p’ example`的意思就是，在example文件里面，查找有erors的行，并打印出来，假如我们这么写，那么就会把所有的文本都打印出来，只不过，有erors的行，打印两遍，所以我们要这么写`sed -n ‘erors/p’ example`
-假如要删除，`sed ’/erors/d’ example`，这样就会删除有erors的行。
-假如我们知道要删除的行是第几行，可以通过这么删除，`sed ‘2,4d’ example` 这样就删除了2-4行。同时可以使用正则表达式等。
-`sed -n ‘/a text/,/This/p’ example`，这句话的意思就是，从example中匹配，打印从第一个包含a text的行，到保护This的那一行截止。
-`sed ‘s/erors/errors’ example` 查找并替代。但是这样只会替代第一行，如果要替代所有的，需要`sed ‘s/erors/errors/g’ example`
-如果多次查找和替换，需要使用-e参数。
-`sed -e ‘s/erors/erros/g’ -e ‘s/last/final/g’ example`
-同时，可以将结果输出到某一个文件。使用>即可。
+	举个例子， `sed ‘/erors/p’ example`的意思就是，在example文件里面，查找有erors的行，并打印出来，假如我们这么写，那么就会把所有的文本都打印出来，只不过，有erors的行，打印两遍，所以我们要这么写`sed -n ‘erors/p’ example`
+	假如要删除，`sed ’/erors/d’ example`，这样就会删除有erors的行。
+	假如我们知道要删除的行是第几行，可以通过这么删除，`sed ‘2,4d’ example` 这样就删除了2-4行。同时可以使用正则表达式等。
+	`sed -n ‘/a text/,/This/p’ example`，这句话的意思就是，从example中匹配，打印从第一个包含a text的行，到保护This的那一行截止。
+	`sed ‘s/erors/errors’ example` 查找并替代。但是这样只会替代第一行，如果要替代所有的，需要`sed ‘s/erors/errors/g’ example`
+	如果多次查找和替换，需要使用-e参数。
+	`sed -e ‘s/erors/erros/g’ -e ‘s/last/final/g’ example`
+	同时，可以将结果输出到某一个文件。使用>即可。
 
 12. if语句。
-注意在if [  ]的方括号里面，括号的左右是要有空格的。
-常用的用来判断文件的一些参数。
+	注意在if [  ]的方括号里面，括号的左右是要有空格的。
+	常用的用来判断文件的一些参数。
 	+ -a 存在即为真
 	+ -d 是否是个目录
 	+ -e 是否存在
@@ -92,19 +91,21 @@ spell spill spall
 	+ -r 是否可读
 	+ -s 是否大小不为0
 	+ -w 是否可写
+	+ -z 如果后面的string长度为0
+	+ -n 如果后面的string长度不为0
 	+ -x 是否有执行权限
-```if [ -f /home/monkey/hello ] 
-then
-	echo “file exist”
-fi``` 
-可以写成
-```if [ -f /home/monkey/hello ]; then
-	echo “file exist”
-fi``` 
-可以写成
-```[ -f /home/monkey/hello ] && (echo “file exist”)```
-如果是当条件不满足做什么东西的时候，就是用||。
-但是，一般很少用这种代码，大部分都会采用test这个内置命令，来检验一些问题。比如
-上面的判断语句可以改为
-`test -f /home/monkey/hello && echo file exist`
+	`if [ -f /home/monkey/hello ]`
+	`then`
+	`echo “file exist”`
+	`fi`
+	可以写成
+	`if [ -f /home/monkey/hello ]; then`
+	`echo “file exist`
+	`fi`
+	可以写成
+	```[ -f /home/monkey/hello ] && (echo “file exist”)```
+	如果是当条件不满足做什么东西的时候，就是用||。
+	但是，一般很少用这种代码，大部分都会采用test这个内置命令，来检验一些问题。比如
+	上面的判断语句可以改为
+	`test -f /home/monkey/hello && echo file exist`
 

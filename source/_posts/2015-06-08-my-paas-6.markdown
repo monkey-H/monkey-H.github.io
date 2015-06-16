@@ -1,0 +1,83 @@
+---
+layout: post
+title: "设计自己的paas平台nap六----配置应用设置参数"
+date: 2015-06-08 09:08:40 +0800
+comments: true
+categories: 
+---
+###写在前面
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
+
+###配置容器启动参数
+后来我发现，不只是容器的启动参数，我们可以设计的更多，很有可能，包括容器的内存，cpu设置，环境的依赖，甚至是对某些容器的依赖，某些服务的依赖，或者是container之间的link关系，都可以通过这个实现。
+事情的起因是这样的。我有个师妹，想要跑一个程序，老板就说，干脆试一下我写了这么久的东西，可不可以用，跑起来试试。虽然后来是跑起来了，但是师妹去找了一个更帅的师兄。师妹的那个程序本身没有什么特殊的地方，但是，师妹那个程序是一个计算密集型的应用，需要比较多的内存和cpu，docker默认是可以使用所有宿主机本身的所有内存和cpu的，这个恰巧是符合用户需求的，但是，我们可能遇到一个情况，就是限制用户能够使用的内存和cpu，基于这个需求，我觉得有必要设计一个关于限制cpu，内存的机制。
+问题来了，把关于这种限制，或者称为参数设置，加在哪里？首先，看看我们之前做的事情，都有了哪些文件，文件夹。第一个，data文件，用来存储程序可能需要的输入文件等，加在这里？不合适，我们希望专职专用，用来存放输入文件的地方，就用来存放输入文件就可以了。第二，pom.xml文件，这个是只有在应用类型是maven文件的时候才会有的文件，如果不是maven文件，就没有了，也不合适。第三，src文件夹，这个是用来存放源程序的地方，放参数设置信息，也不合适。还有一个是Dockerfile，Dockerfile是我们直接用的docker的文本语言规范，加进去也实在是不方便，放弃。还有最后一个，profile文件，这个文件之前被我们定义为存放起始命令的文件，其实，在这里面，我们可以加入更多。
+首先想到的，肯定是我们的需求。我们本来就是希望可以加入关于内存的设置，这里，我们在profile里面原本只是一行起始命令的地方，加一些标记。比如，原本可能是
+`sh hello.sh`
+现在，我们这样写
+`command: sh hello.sh`
+为什么要加一个标记信息呢？因为我们后面，还要加上memory限制。
+```
+command: sh hello.sh
+memory: 1024m
+```
+怎么样，这样一来，我们就可以解读道不同的行的时候，知道这行到底是干什么用的。
+接下来，我们怎么解读呢？
+```
+#look for memory limit and others
+		MEMORY=$(grep memory: $APPDIR/$APP/profile | head -1 | awk '{ print $2 }')
+		if [ -z "$MEMORY" ]; then
+			echo "no memory limit"
+		else
+			DOCKER_MEMORY="-m $MEMORY"
+		fi
+
+#get out the entrypoint command
+		line=$(grep command: $APPDIR/$APP/profile | head -1)
+		null=""
+		COMMAND="${line/command:/$null}"
+		if [ -z "$COMMAND" ]; then
+			echo "must be command in profile"
+		else
+			echo $COMMAND >> $APPDIR/$APP/run
+		fi
+```
+然后，在启动这个容器的地方，加上这个DOCKER_MEMORY参数限制。
+```
+[Service]
+ TimeoutStartSec=900m
+ ExecStartPre=-/usr/bin/fleetctl destroy $APP.service
+ ExecStartPre=-/usr/bin/fleetctl destroy ${APP}_discovery.service
+ ExecStartPre=/usr/bin/docker build -t $RIGISTRY/${APP}_image $APPDIR/$APP
+
+ ExecStartPre=-/usr/bin/docker stop $APP
+ ExecStartPre=-/usr/bin/docker rm $APP
+ ExecStartPre=-/usr/bin/docker pull $RIGISTRY/${APP}_image
+ ExecStart=/usr/bin/docker run --rm -P --name $APP $RIGISTRY/${APP}_image
+ ExecStart=/usr/bin/docker run -P $DOCKER_MEMORY --name $APP $RIGISTRY/${APP}_image
+ ExecStop=/usr/bin/docker stop $APP
+ ExecStopPost=-/usr/bin/docker rm $APP
+```
+这里可以看到，有个TimeoutStartSec这个参数，这个是用来等待的。可以看到我们这个service中，有个docker pull的命令，大家都知道，这个东西是非常耗时的，而fleet在启动service的时候，如果超过了特定的时间，就会被认为是应用超时，就会被停掉，所以，我们这里设置了一个大的时间进行等待。
+ok，特定需求搞定了，然后我觉得，我们可以做的更好。除了Memory，我们完全可以再弄点别的参数设置上去。那么，我们之前那种通过grep查找的方式，就感觉太low了。这样，就会好很多。
+```
+		while read line; do
+			key=$(echo $line | cut -f 1 -d ' ')
+			str=""
+			value=$(echo ${line/$key/$str})
+			case $key in
+				memory:)
+					MEMORY=$(echo $line | awk '{ print $2 }')
+					DOCKER_MEMORY="-m $MEMORY"
+				;;
+				command:)
+					echo $value >> $APPDIR/$APP/run
+				;;
+				*)
+					echo "other settings"
+			esac
+		done < $APPDIR/$APP/profile
+```
+我们一行一行读，假如我们有新的需求，需要加入新的配置设置，就直接加进去，这样就感觉正规多了。至于DOCKER_MEMORY，这种东西，以后会变成DOCKER_SETTING，然后，有写的配置信息，直接接到后面就可以了。
+我是一个天才，啊哈哈！！

@@ -1,0 +1,26 @@
+---
+layout: post
+title: "设计自己的pass平台 nap----统一接口规范"
+date: 2015-06-15 21:18:17 +0800
+comments: true
+categories: 
+---
+
+###写在前面
+
+
+###nap统一接口
+统一接口的一部分，想到其余的，再补。（注意这里的service和app是等同的，nap中跑的应用的命名规范为username_appname_mpi_master.service或者username_appname_mpi_slave@%i.service或者username_appname_common@%i.service）
+- submit_app(username_servicename, url): 上传应用，并不部署
+- list_services(username) 列出已经上传的应用
+- get_service_url(username, servicename) 得到部署的应用的url，这个url我们希望通过etcd来存储。存储的位置暂定为/services/url/username/appname
+- get_instances_num(username_service_name) 获得某个上传的应用的实例个数。
+- list_instances(username_servicename) 列出相同unit的不同应用，通过用户名和app名字进行匹配。
+- get_port(instancename) 获得跑起来的实例的端口号，通过etcd来设置。存放在/services/port/username/appname
+- get_journal(instancename) 获得某一个实例的运行日志。
+- stop_app(instancename) 停止某一个instance
+- start_app(instancename) 开始一个刚刚开始的应用
+- cat_app(instancename) 获得某一个instance的启动命令。
+- get_parameters(username_servicename) 获得某一个应用的可调参数列表。
+- start_common(username_servicename, para_str) 启动一个普通的应用。
+- start_mpi(username_servicename, para_str) 启动一个mpi应用。

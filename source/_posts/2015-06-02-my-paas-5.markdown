@@ -1,0 +1,80 @@
+---
+layout: post
+title: "设计自己的paas平台nap 5----maven规范和自发现服务"
+date: 2015-06-03 08:34:07 +0800
+comments: true
+categories: 
+---
+
+###写在前面
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
+
+###自发现服务
+如果我们在客户端git push的时候，如果这个应用已经部署好了，并且，部署的应用是最新的版本，我们是不需要再次部署的，直接返回部署好的应用的ip地址和端口就可以了。那么，是怎么做到的呢？我们的想法是，首先，在我们push之后，我们要在某一个地方部署，在部署的时候，肯定要先把应用git clone下来，那么我们假如之前已经部署过了，那么这个地方肯定就已经有了这个应用的代码，然后我们在这个文件夹下，git pull一下，如果提示，已经不是最新版本的应用，那么我们就重新部署。假如已经是最新的应用文件，那么接下来，我们就继续判断这个应用是否已经正确部署，如果是的，就返回正确部署的应用的ip和端口号，如果没有，就重新部署。关于如何返回正确的端口号和ip信息，因为我们在每次部署后都是把部署好的应用的ip和端口号写到etcd键值对服务中，只要去里面去读就可以了。代码如下。
+```
+if [ -d $APPDIR/$APP ]; then
+	cd $APPDIR/$APP
+	update_new=$(git pull)
+	cd  
+	if [ "$update_new" = "Already up-to-date." ]; then
+		if [ $(etcdctl get /services/coreos1/$APP) ]; then
+			ipport_etcd=$(etcdctl get /services/coreos1/$APP)
+			exit
+		elif [ $(etcdctl get /services/coreos2/$APP) ]; then
+			ipport_etcd=$(etcdctl get /services/coreos2/$APP)
+                        exit
+		elif [ $(etcdctl get /services/coreos3/$APP) ]; then
+			ipport_etcd=$(etcdctl get /services/coreos3/$APP)
+                        exit
+        else
+        	sudo rm -r $APPDIR/$APP
+            mkdir $APPDIR/$APP
+            git clone $GITDIR/$APP $APPDIR/$APP
+		fi
+	else
+		sudo rm -r $APPDIR/$APP
+		mkdir $ADDDIR/$APP
+		git clone $GITDIR/$APP $APPDIR/$APP
+	fi
+else
+	mkdir $APPDIR/$APP
+	git clone $GITDIR/$APP $APPDIR/$APP
+fi
+
+```
+也许你会很奇怪，为什么在判断应用已经是最新的，但是没有正确部署的时候，为什么要先把应用文件删除之后重新下载进行部署呢？这就是我们之后要实现的，支持maven规范的应用的支持了。
+
+###支持maven规范的paas
+maven是一个很流行的一种版本规范吧，用我导师的话就是，“很简单的”，确实，如果只是想知道怎么用，还是很简单的，可以看看[这里](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)，一个5分钟的tutorial，大概就是一个应用分为以下几个文件夹。
+- src 源代码，程序的源代码都是写在这里面的。
+- pom.xml 一个文件，里面是关于你的这个应用所依赖的环境的描述，当然，你的依赖环境的描述要按照他的要求和规范写。
+- profile 一个文件，这个是一个执行命令，是你程序的入口。就是maven在打包好你的应用之后，会去执行这个命令。
+
+我的想法也很简单。首先，我们先制作一个支持maven的基础镜像。其实这个基础镜像只要在ubuntu的基础镜像上加两个东西就可以了。第一个是java环境，这个不用说也知道，如果没有java环境，maven都装不了。第二个也就是maven了，关于制作基础镜像的过程我们这里就不在描述了，没什么难点，唯一的难点就是我基础文档没有看好，没有充分利用ENV这个dockerfile的参数，浪费了一些时间。
+有了maven的基础镜像之后，接下来就是把客户的程序拷贝进去，注意，不要用`COPY * /app`这种方式，这种方式会拷贝当前目录下所有的文件，和文件夹内部的内容，我没有更好的解决这个问题的办法，因为他的机制就是不支持，我的解决办法就是我指定要拷贝的文件名，这种拷贝方式是拷贝的文件。当拷贝进去之后，就可以用mvn package打包文件，然后把profile写到Dockerfile的Entrypoint里面，这样，新的Dockerfile就产生了，就可以部署了。代码如下。
+```
+if [ ! -f $APPDIR/$APP/Dockerfile ]; then
+	if [ -f $APPDIR/$APP/pom.xml ]; then
+		sudo touch $APPDIR/$APP/Dockerfile
+		sudo chmod o+w $APPDIR/$APP/Dockerfile
+		cat > $APPDIR/$APP/Dockerfile <<EOF
+FROM docker.iwanna.xyz:5000/hmonkey/maven
+MAINTAINER hmonkey <5681713@qq.com>
+
+COPY pom.xml /app/pom.xml
+COPY src /app/src
+COPY profile /app/profile
+COPY data /app/data
+WORKDIR /app
+RUN mvn package
+ENTRYPOINT ["sh", "/app/profile"]
+EOF
+	else 
+		echo "anything else"
+	fi
+fi
+```
+
+这也回答了上面，为什么要rm文件夹的问题，因为如果不rm，maven的Dockerfile会在第一次执行之后添加进去，如果你不rm掉，即使你有更新，也不会判断这是一个maven程序，因为这里面有了Dockerfile。还有就是我觉得maven这个东西这样做是不够的，或者我这种实现方式的问题，不能COPY所有的事情，所以我们这里加了一个data文件夹，专门用来存储一些数据。这可以说是我的一种机制。
+还有一个问题就是，如何返回数据值的问题，你这个应用总有一个计算结果，那么这个结果放在哪里呢？怎么返回给用户呢？这里还没有想清楚，后面我们会具体思考。

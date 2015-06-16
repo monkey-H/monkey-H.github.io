@@ -1,0 +1,72 @@
+---
+layout: post
+title: "设计自己的paas平台nap 7----单应用多实例"
+date: 2015-06-09 07:45:41 +0800
+comments: true
+categories: 
+---
+###写在前面
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
+
+###单应用多实例 VS 一组类似应用
+我觉得，老板的理解不对。需求是这样的，一个应用，需要启动多次，但是每次启动的命令中的某个参数不同。那么，对传统意义上而言，这几个应用就是不同的应用，不能说是同一个应用的不同实例。对我们现在设计的paas平台而言，就应该是建立几个不同的文件夹，代表你要起的应用的个数，里面资源可以一样，但是你的启动命令不一样，这样就起来不同的应用了，当然，我也承认，这样确实比较麻烦。
+
+所以，我思考了一下，单应用多实例和一群类似的应用是不一样的。单应用多实例，应该是同一个应用，完全相同，启动多个实例，这样的目的可能是为了比较同一个应用多次计算的结果是否一致，或者考虑到可靠性，即使其中的一个应用实例死掉，也是可以访问等。而一群类似的应用，可能就是因为他们的计算资源一致，或者只有起始命令不一样而已。那么，我们就针对这两个需求，做不同的事情。
+
+###单应用多实例
+在我们的paas平台中，应该有两个地方需要体现。
+第一，是在部署应用之前。在我们的源代码文件中，我们有个profile的文件，我们上篇文章中说过，可以通过在里面添加参数的形式来实现。我们这里就是增加了一个新的参数，scale。这个scale，就是单应用要启动的实例个数。然后，在解读profile文件的时候，读出这个值。至于启动部分，fleet有个机制可以满足，所谓的高可用应用的部署。是关于submit myapp@.service，启动的时候，启动start myapp@%i.service这种方式，这里的%i是一个数字，字母，或者其他，在service文件中，可以通过%i访问。启动的个数就通过一个for循环就可以了。代码如下：
+```
+while read line; do
+                        key=$(echo $line | cut -f 1 -d ' ')
+                        str=""
+                        value=$(echo ${line/$key/$str})
+                        case $key in
+                                memory:)
+                                        MEMORY=$(echo $line | awk '{ print $2 }')
+                                        DOCKER_MEMORY="-m $MEMORY"
+                                ;;
+                                scale:)
+                                        INSTANCES=$(echo $line | awk '{ print $2 }')
+                                ;;
+                                command:)
+                                        echo $value >> $APPDIR/$APP/run
+                                ;;
+                                *)
+                                        echo "other settings"
+                        esac
+                done < $APPDIR/$APP/profile
+
+# start instances of scales
+for ((i=1; i<=$INSTANCES; ++i))
+do
+	fleetctl destroy $WORKDIR/${APP}@$i.service > /dev/null
+	fleetctl destroy $WORKDIR/${APP}_discovery@$i.service > /dev/null
+	fleetctl start $WORKDIR/${APP}@$i.service > /dev/null
+	fleetctl start $WORKDIR/${APP}_discovery@$i.service > /dev/null
+done
+```
+毕竟并不是所有的用户都是程序员，都希望看到底层的显示，所以我们为之设计了一个web manager，虽然很丑，但是还在规划中。其主要思想就是通过fleetctl --endpoint机制，远程访问fleet里面的信息。那么，这个web manager也就是第二个地方我们要考虑的点。在这个地方，应该加一个按钮，这个按钮的作用就比较简单，就是单纯的扩大实例的个数。其中要注意的就是实例命名的问题，因为不能重复，在我们现在设计的paas平台中，如果应用重复，就是单纯的覆盖老应用，还是很不友好的，我们后面估计会花一点时间，单独思考一下关于命名冲突的问题。
+
+###一组类似应用
+在我们的web界面中，我们有一个部署应用的界面。这个是怎么实现的呢？在你需要部署这个应用的时候，需要输入要部署的应用的url。得到这个url之后，我们这么做。
+```
+git clone git@url
+git remote add iwanna iwanna@ip:app-name
+git push iwanna master
+```
+稍微有点常识的人，一看就知道这是在干嘛。其实就是下载下来源码，然后push到我们的paas平台中去。同样的，我们这里部署一组类似应用的时候，也采用这种方式。
+在某一个应用下面，点击部署相似应用的按钮，弹出一个对话框，需要你输入重新启动的命令。得到这个命令之后，我们就拿到了两样东西。第一，这组相似应用的名字，第二，这组相似应用的新命令，够了。
+然后我们接下来要做的事情就是，按照相似应用的名字，把这个相似应用的文件下载下来，修改其中profile的command命令，重新push。当然，还是一个不能忽略的问题，命名问题。
+伪代码如下：
+```
+copy core@ip:/home/iwanna/apps/$APP /apps/${APP}_${NO} //这里应该是git clone，但是我们修改了服务器的入口，所以clone的时候并不是我们希望的操作，因为我们的paas平台上不只是有iwanna这一个用户，还有别的用户，所以我们这里直接用scp的方式来得到，临时的做法，后面应该会改成更加正式的做法。这里的NO是考虑到命名的问题，我们命名的规则就是，查看和这个应用已经类似的应用有几个了，然后在这数字上加一，前面加上应用名字，就是新的类似应用的名字。
+cd /apps/${APP}_${NO}
+#替换profile中的command
+
+git add *
+git commit -m "new app"
+git remote add iwanna iwanna@ip:${APP}_${NO}
+git push iwanna master
+```

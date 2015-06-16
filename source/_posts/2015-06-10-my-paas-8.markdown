@@ -1,0 +1,128 @@
+---
+layout: post
+title: "设计自己的paas平台nap 8----支持mpi应用"
+date: 2015-06-10 07:08:09 +0800
+comments: true
+categories: 
+---
+###写在前面
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
+
+###支持mpi应用
+我们之前花了那么长时间搭建flannel，配置mpi，跑mpi benchmark，时间可不是白花的，我们当然要把这个东西放到我们的paas平台之上。
+我们先思考一下，我们这个paas平台已经做了什么东西，可以支持哪几种类型的应用。
+- Dockerfile
+- pom.xml
+- profile
+
+这三种，是我们最早可以支持的应用。对应来说，Dockerfile是最简单的形式，这是我们直接使用了Docker的规范，coreos原生支持Docker，这种形式来实现的，此处略过。第二种形式pom.xml，我们原本打算支持maven工程，所以有这么一个东西，如果工程里没有Dockerfile，但是有pom.xml，我们就用maven的镜像去mvn package这个工程，然后用profile里面的东西来跑。第三种，刚开始的时候只是一个权宜之计，本来是为了执行一些简单的脚本，不想把一些简单的应用转换为maven而存在的，但是后来发现其实这种东西非常有用，就直接保留了下来。
+好的，那么，如果加入支持mpi的应用，那么mpi的这种格式规范应该和谁并列呢？是和上面叙述的这三个工程格式并列？还是在profile里面写一条支持mpi格式的一些判断？
+我们最终的选择是，和上面这三种格式并列。
+
+###mpi格式边排
+既然和上面三个对应了，那么像Dockerfile，pom.xml一样，我们要有个文件指示这是一个mpi应用，没有想到更好的名字，我们就叫mpi.xml文件好了。工程里如果有这个文件，我们就视为mpi应用。在mpi.xml里面，我们要有哪些东西呢？我们知道，如果要跑一个mpi应用，首先，我们要先编译，`mpicc ${APP}.c -o $APP`，然后，运行`mpirun -hostfile hostfile -n 4 $APP` 那么，我们的格式规范里，首先要有要编译的文件的名字，应用的名字（$APP_MASTER），要跑的节点的个数，至于host列表就不需要提供了，我们自动给他生成需要的节点的个数的容器。结构如下：
+```
+from: ${APP}.c
+to: ${APP}
+hosts: 4
+```
+暂时就这些吧，跑一个hello world的例子足够了，等以后有了新的需求，或者为了更加完善，我们再加。
+
+###paas解读mpi.xml
+ok，git push上去，解释脚本读取工程文件，遇到mpi.xml，判定为mpi工程。然后怎么做呢？我们都知道，我们之前部署的应用都是单节点的，那个比较简单，但是现在这个是多节点的，我们需要先跑起来hosts，然后master要依赖host列表来寻找slaves，然后在上面跑应用。
+那么，首先，我们要先开一个容器，把mpi工程里的src文件读进去，里面放的主要是源代码，包含我们的${APP}.c文件。当然了别的文件，像数据data文件夹也都要读进去。然后在里面`mpicc ${APP}.c -o ${APP}`。
+```
+while read line; do
+        key=$(echo $line | cut -f 1 -d ' ')
+        str=""
+        value=$(echo ${line/$key/$str})
+        case $key in
+                from:)
+                        FROM=$value
+                ;;
+                to:)
+                        TO=$value 
+                ;;
+                hosts:)
+                        HOSTS=$value
+                ;;
+                *)
+                        echo "other settings"
+        esac
+done < $APPDIR/$APP/mpi.xml
+
+cd /$APPDIR/$APP
+cat > $APPDIR/$APP/Dockerfile <<EOF
+FROM docker.iwanna.xyz:5000/hmonkey/openmpi
+MAINTAINER hmonkey <5681713@qq.com>
+COPY src /app
+WORKDIR /app
+RUN mpicc $FROM -o $TO
+EOF
+```
+接着，我们要把刚刚那个container打包成一个镜像，上传到registry上面去，当然，这两步也可以用一个Dockerfile来解决。
+再者，我们已经有了基础镜像，接下来就是以这个基础镜像为镜像，跑n个container作为slave，当然，这个要求我们的coreos cluster已经正确安装了flannel，因为我们要通过flannel来实现不同host节点上的container进行通信。这里面最难的部分是如何返回跑起来的container的ip地址。
+最后，我们已经得到了host列表，我们只要开动一个master节点，在master节点上运行`mpirun --hostfile hostfile $APP`就可以了。
+```
+cat > ${SLAVE_CONTAINERS} <<EOF
+[Unit]
+Description=slave containers
+Requires=docker.service
+After=docker.service
+
+[Service]
+TimeoutStartSec=900m
+ExecStartPre=-/usr/bin/docker stop ${APP}_slave%i
+ExecStartPre=-/usr/bin/docker rm ${APP}_slave%i
+ExecStartPre=-/usr/bin/docker pull $REGISTRY/${APP}_image
+ExecStart=/usr/bin/docker run -P --name ${APP}_slave%i $REGISTRY/${APP}_image /usr/sbin/sshd -D
+ExecStop=/usr/bin/docker stop ${APP}_slave%i
+ExecStopPost=-/usr/bin/docker rm ${APP}_slave%i
+
+EOF
+
+fleetctl destroy ${SLAVE_CONTAINERS}
+
+fleetctl submit ${SLAVE_CONTAINERS}
+
+for ((i=1; i<=$HOSTS; ++i))
+do
+	fleetctl destroy slaves_${APP}@$i.service > /dev/null
+	fleetctl start slaves_${APP}@$i.service > /dev/null
+done
+```
+关于如何返回ip地址，我暂时的想法是，并不通过etcd，虽然也可以，但是由于etcd存在一定的延迟，我们后面会通过etcd来公布已经部署的应用，但是返回host列表，我想在每次成功部署一个container之后，就用docker inspcet {{}}(中间的参数我忘记了)，这种东西直接返回，然后启动多少个，我们就返回多少个，反正我们是集中式部署的container（但是部署的container是分布式的），收集起来比较容易。
+上面的想法是多么的简单无知。fleetctl在部署应用的时候，是在部署应用的机器上，直接部署的，并不是集中式的部署，所以，还是要通过etcd，把部署的slave的ip地址写到etcd中，然后，再在master节点上读取，最后再运行。
+```
+cat > ${DISCOVERY} << EOF
+[Unit]
+Description=${APP}_discovery
+BindsTo=slaves_${APP}@%i.service
+After=slaves_${APP}@%i.service
+
+[Service]
+ExecStart=/bin/sh -c "while true; do appip=\$(docker inspect --format='{{.NetworkSettings.IPAddress}}' ${APP}_slave%i); etcdctl set /services/mpi/$APP/slaves/slave%i \$appip --ttl 60; sleep 30; done"
+ExecStop=/usr/bin/etcdctl rm /services/mpi/$APP/slaves/slave%i
+
+[X-Fleet]
+MachineOf=slaves_${APP}@%i.service
+EOF
+
+fleetctl destroy ${DISCOVERY}
+
+fleetctl submit ${DISCOVERY}
+
+for ((i=1; i<=$HOSTS; ++i))
+do
+        fleetctl destroy discovery_${APP}@$i.service > /dev/null
+        fleetctl start discovery_${APP}@$i.service > /dev/null
+done
+
+HOSTLIST=$(etcdctl get services/mpi/$APP/slaves/slave1)
+for ((i=2; i<=$HOSTS; ++i))
+do
+	HOST=$(etcdctl get services/mpi/$APP/slaves/slave$i)
+	HOSTLIST="${HOSTLIST},${HOST}"
+done
+```
