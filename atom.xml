@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-06-15T09:30:29+08:00</updated>
+  <updated>2015-06-17T10:10:03+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -12,6 +12,32 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的pass平台 Nap----统一接口规范]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-10/"/>
+    <updated>2015-06-15T21:18:17+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-10</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<h3>nap统一接口</h3>
+
+<p>统一接口的一部分，想到其余的，再补。（注意这里的service和app是等同的，nap中跑的应用的命名规范为username_appname_mpi_master.service或者username_appname_mpi_slave@%i.service或者username_appname_common@%i.service）
+- submit_app(username_servicename, url): 上传应用，并不部署
+- list_services(username) 列出已经上传的应用
+- get_service_url(username, servicename) 得到部署的应用的url，这个url我们希望通过etcd来存储。存储的位置暂定为/services/url/username/appname
+- get_instances_num(username_service_name) 获得某个上传的应用的实例个数。
+- list_instances(username_servicename) 列出相同unit的不同应用，通过用户名和app名字进行匹配。
+- get_port(instancename) 获得跑起来的实例的端口号，通过etcd来设置。存放在/services/port/username/appname
+- get_journal(instancename) 获得某一个实例的运行日志。
+- stop_app(instancename) 停止某一个instance
+- start_app(instancename) 开始一个刚刚开始的应用
+- cat_app(instancename) 获得某一个instance的启动命令。
+- get_parameters(username_servicename) 获得某一个应用的可调参数列表。
+- start_common(username_servicename, para_str) 启动一个普通的应用。
+- start_mpi(username_servicename, para_str) 启动一个mpi应用。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[设计自己的paas平台nap 9----统一paas平台入口]]></title>
@@ -2794,7 +2820,7 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 
 <h3>dokku进入点</h3>
 
-<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#105;&#x6c;&#x74;&#111;&#x3a;&#103;&#105;&#x74;&#x40;&#x67;&#105;&#x74;&#x2e;&#99;&#x6f;&#x6d;">&#x67;&#105;&#116;&#64;&#103;&#105;&#x74;&#x2e;&#99;&#x6f;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
+<p>我们都知道git和ssh密不可分，从前面的知识我们也知道，当git push的时候，会首先执行ssh <a href="&#x6d;&#97;&#x69;&#108;&#116;&#111;&#58;&#103;&#105;&#116;&#64;&#103;&#x69;&#x74;&#46;&#x63;&#x6f;&#109;">&#x67;&#105;&#x74;&#x40;&#x67;&#105;&#116;&#46;&#99;&#111;&#x6d;</a> git-receive-pack mygit.git这个操作，我们也说过了，这个会是dokku的入口。
 我们停止服务器端的ssh服务，重新使用debug模式开启。</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -2871,51 +2897,6 @@ dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平
 <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/git-build-app_zpsvyxylgsi.png" alt="git-build-app" />
 首先，检查一下app name，看看是否为空，或者是否不存在这个app目录，verify_app_name()这个函数在plugins/common/functions这里面，然后建造一个用来run这个应用的临时目录，并把应用拷贝到这个临时目录，最后，通过查看应用中有没有Dockerfile来判断，接下来执行的命令。但是不管有没有dockerfile，都会执行dokku receive命令。
 终于，我们在dokku源码文件中，找到了receive的case分支。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Dokku源码解读一]]></title>
-    <link href="http://monkey-h.github.io/blog/dokkudao-di-gan-liao-shi-yao/"/>
-    <updated>2015-05-01T09:05:19+08:00</updated>
-    <id>http://monkey-h.github.io/blog/dokkudao-di-gan-liao-shi-yao</id>
-    <content type="html"><![CDATA[<h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-<!--more-->
-
-
-<h3>背景知识</h3>
-
-<ul>
-<li><p>git
-  git是一个分布式版本控制软件，那么什么是版本控制呢？简单来说，版本控制就是一种记录一个或若干文件内容变换，以便将来查阅特定版本修订情况的系统，分为集中式版本控制和分布式版本控制。除了Git，还有像Mercurial，Bazaar，Darcs等。Git的客户端并只是提取最新版本的文件快照，而是把代码仓库完整地镜像下来，这样的话，任何一处协同工作用的服务器发生故障，事后都可以用任何一个镜像出来的本地仓库恢复，因为每一次的提取操作，实际上都是一次对代码仓库的完整备份。
-  Git可以简单理解成客户端/服务器（C/S）模型，客户端就是客户使用的，用来上传repository和下载repository，修改repository的地方，那么服务器是什么东西呢？不要害怕，其实服务器端更简单。通俗点讲，服务器就是一个文件存储系统，push的时候，就是把本地的repository上传到这个服务器的某一个目录，clone的时候，就是把那个目录的文件下载下来而已，只不过在部署服务器，上传的时候，可能会做一些初始化而已，这都不是重点。
-  关于Git我们这里就不再更多的介绍，大家可以在<a href="git-scm.com/book/zn" title="git中文介绍">这里</a>看到最详细的介绍，下面我们说一点dokku使用的Git的一个小技巧。
-  当我们在客户端git push的时候，在服务器端，到底做了什么？当push的时候，首先，会通过ssh的密钥机制来检验你是否有资格push，如果有资格，那么在服务器端，接收到你push的命令的时候，会首先执行
-  <code>
-  ssh git@git-repositry.com git-receive-pack 'my-app.git'
- </code>
-  这个命令。是不是很神奇，知道了这个，我们就知道了dokku平台的入口在哪里，那么，接下来，所有的事情都好解释了。</p></li>
-<li><p>pluginhook
-  pluginhook并不是被大家普遍使用的一个项目，这是dokku的原作者自己提出，并且用在自己的项目，比如dokku中的一个子项目。那么，这个项目是不是就很难理解？其实不是，如果换个名字，大家估计就会很熟悉，hook。Git本身就有hook机制，其作用主要是，当某些重要时间发生时，Git以调用自定义的脚本。在Git中，有两组挂钩，客户端和服务器端的。客户端主要用于客户端的操作，像你在commit的时候，可能同时希望可以提交和合并等，但是对一个paas平台而言，关注的更多是服务器端的hook脚本。服务器端的hook Git脚本，通常被一些开发者用来做自动部署，也就是说，当用户通过客户端git push操作后，服务器端在收到这个commit之前，之后，都可以自动调用.git/hooks目录下的一些脚本文件，并执行。非常适合自动部署，在用户push之后，不需要再到服务器端，执行部署工作。hook脚本的作用就是这样，那么pluginhook又做了什么事情呢？pluginhook的项目代码很少，只有不到200行的go语言的代码。是一个比hook本身更好的plugin system。相对于hook脚本，pluginhook更关注plugin，什么意思呢？就是说，他把所有的hook脚本都集中在一个plugins的目录里，当然，这个目录也是特定的目录，这样，操作系统才知道怎么去找plugin的目录。同一个hook脚本，可以有多个plugin，调用的时候，这些plugin都会去执行。简单来说呢，pluginhook就是对hook进行了一层封装，把原本调用hook脚本的地方，用pluginhook来调用，如hook脚本调用
-  <code>
-  hooks/post-commit $REV $USER
- </code>
-  可以用pluginhook这样调用
-  <code>
-  pluginhook post-commit $REV $USER
- </code>
-  pluginhook命令就是简单的把plugin目录下的所有路径都找一遍，这个路径是通过环境变量$PLUGIN_PATH来定义的，只要找到和命令相同的文件的名字，就把这个命令之后的参数都传给这个文件，让他执行。那么，用pluginhook和hook有什么区别呢？可以这么说，不用pluginhook，只用hook也是可以完全实现这些功能的。使用hook，一是为了方便，二是，每个我们需要处理的点，只能有一个hook脚本实现，这是dokku所不希望的事情，所以，才有了pluginhook的出现。
-  关于pluginhook的实现的代码阅读，我们之后再补充。</p></li>
-<li><p>ssh
-  ssh也是dokku修改的一个点，也是关于如何把git push后，在服务器端触发git-receive-pack的时候，默认调用dokku处理的部分。当我们在终端，将项目push到dokku平台的时候，假如我们打开dokku平台ssh服务的-x模式，也就是debug模式，我们可以看到这么一句话。
-  <img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/sshd_zpspxi2f2st.png" alt="email" />
-  可以看到，dokku做了一件事情，他把所有的命令，都通过/home/dokku/.sshcommand这个文件一遍，这样就实现了进入dokku平台的自主控制界面，后面，他像干什么就干什么了。那么他是怎么实现这个功能的呢？这就和ssh的机制有关了。
-  ssh有一个叫做ssh forced command的机制。如果在服务器的.ssh/authorized_keys前面，添加一个command=&ldquo;&#8221;，那么ssh进来，不管执行什么命令，都是从这个地方进入。也就是说，假如我们这里写的是command=&#8221;echo hello&#8221;，那么，不管ssh的时候，执行了什么命令，都只会执行echo hello这个东西。注意$SSH_ORIGINAL_COMMAND这个命令是ssh进来的时候的原始命令。</p></li>
-</ul>
-
 ]]></content>
   </entry>
   
