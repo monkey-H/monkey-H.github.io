@@ -101,7 +101,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/my-paas-10/">设计自己的pass平台 Nap&#8212;-统一接口规范</a></h1>
+      <h1 class="entry-title"><a href="/blog/my-paas-10/">设计自己的pass平台nap 10&#8212;-统一接口规范</a></h1>
     
     
       <p class="meta">
@@ -119,24 +119,14 @@
 
   <div class="entry-content"><h3>写在前面</h3>
 
-<h3>nap统一接口</h3>
+<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
 
-<p>统一接口的一部分，想到其余的，再补。（注意这里的service和app是等同的，nap中跑的应用的命名规范为username_appname_mpi_master.service或者username_appname_mpi_slave@%i.service或者username_appname_common@%i.service）
-- submit_app(username_servicename, url): 上传应用，并不部署
-- list_services(username) 列出已经上传的应用
-- get_service_url(username, servicename) 得到部署的应用的url，这个url我们希望通过etcd来存储。存储的位置暂定为/services/url/username/appname
-- get_instances_num(username_service_name) 获得某个上传的应用的实例个数。
-- list_instances(username_servicename) 列出相同unit的不同应用，通过用户名和app名字进行匹配。
-- get_port(instancename) 获得跑起来的实例的端口号，通过etcd来设置。存放在/services/port/username/appname
-- get_journal(instancename) 获得某一个实例的运行日志。
-- stop_app(instancename) 停止某一个instance
-- start_app(instancename) 开始一个刚刚开始的应用
-- cat_app(instancename) 获得某一个instance的启动命令。
-- get_parameters(username_servicename) 获得某一个应用的可调参数列表。
-- start_common(username_servicename, para_str) 启动一个普通的应用。
-- start_mpi(username_servicename, para_str) 启动一个mpi应用。</p>
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/my-paas-10/">继续阅读;</a>
+    </footer>
   
 
 
@@ -255,7 +245,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/my-paas-6/">设计自己的paas平台nap六&#8212;-配置应用设置参数</a></h1>
+      <h1 class="entry-title"><a href="/blog/my-paas-6/">设计自己的paas平台nap 6&#8212;-配置应用设置参数</a></h1>
     
     
       <p class="meta">
@@ -449,7 +439,7 @@
       </li>
     
       <li class="post">
-        <a href="/blog/my-paas-10/">设计自己的pass平台 Nap&#8212;-统一接口规范</a>
+        <a href="/blog/my-paas-10/">设计自己的pass平台nap 10&#8212;-统一接口规范</a>
       </li>
     
       <li class="post">
@@ -465,7 +455,7 @@
       </li>
     
       <li class="post">
-        <a href="/blog/my-paas-6/">设计自己的paas平台nap六&#8212;-配置应用设置参数</a>
+        <a href="/blog/my-paas-6/">设计自己的paas平台nap 6&#8212;-配置应用设置参数</a>
       </li>
     
       <li class="post">
