@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-06-19T08:05:34+08:00</updated>
+  <updated>2015-06-19T08:06:43+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -18,7 +18,7 @@
     <link href="http://monkey-h.github.io/blog/my-paas-11/"/>
     <updated>2015-06-17T10:11:07+08:00</updated>
     <id>http://monkey-h.github.io/blog/my-paas-11</id>
-    <content type="html"><![CDATA[<h2>#</h2>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
 
 <p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
 
