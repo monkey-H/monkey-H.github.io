@@ -1,17 +1,18 @@
 ---
 layout: post
-title: "设计自己的pass平台 nap----统一接口规范"
+title: "设计自己的pass平台nap 10----统一接口规范"
 date: 2015-06-15 21:18:17 +0800
 comments: true
 categories: 
 ---
 
 ###写在前面
-
-
+在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+<!--more-->
 ###nap统一接口
 统一接口的一部分，想到其余的，再补。（注意这里的service和app是等同的，nap中跑的应用的命名规范为username_appname_mpi_master.service或者username_appname_mpi_slave@%i.service或者username_appname_common@%i.service）
-- submit_app(username_servicename, url): 上传应用，并不部署
+```
+- deploy_app(username_servicename, url): 上传应用，并不部署
 - list_services(username) 列出已经上传的应用
 - get_service_url(username, servicename) 得到部署的应用的url，这个url我们希望通过etcd来存储。存储的位置暂定为/services/url/username/appname
 - get_instances_num(username_service_name) 获得某个上传的应用的实例个数。
@@ -24,3 +25,15 @@ categories:
 - get_parameters(username_servicename) 获得某一个应用的可调参数列表。
 - start_common(username_servicename, para_str) 启动一个普通的应用。
 - start_mpi(username_servicename, para_str) 启动一个mpi应用。
+```
+
+
+###接口进一步解释。
+从deploy开始。用户选择上传一个应用。deploy_app username_appname url，这个时候，服务器端，就是到/home/nap/services/username/username_appname路径下，下载对应url下的应用程序。那么list_services username，就是到这个路径下，有多少个文件夹就显示出来。同时，在deploy_app的时候，也在etcd的/services/url/username/appname路径下，存储url的值，为get_service_url做准备。接下来是start_common username_appname para_str这个命令，显然，在执行这个命令之前，要先执行get_parameters username_servicename，这个命令的作用是去读取用户程序文件夹下profile文件中的被{}包含的单词，我们认为这个单词是可以重新设定的可变参数，返回{}包含的单词，按逗号隔开的一个字符串，比如para1,para2。然后，用户需要填写这些参数对应的值，调用start_common函数，就可以部署一个应用。部署的过程就是，把/home/nap/services/username/username_servicename路径下的应用程序，拷贝到/home/nap/apps/username/username_servicename_num下，把可变参数用得到的参数列表替换，并且，注意命名，有个num，意思是这个文件夹下已经有的文件个数+1，这样可以避免重名。拷贝好，替换好之后呢，就可以start了，具体的start一个用例，我们在前面已经介绍的很清楚了，这里就不再介绍了。
+
+当start好一个实例之后。用户调用get_instances_num service_name就可以获得service对应的instance有多少个，具体实现就是利用fleetctl list-units中所有的结果，和<service_name_来进行匹配，有多少个，就输出多少。当然，list_instances也就解决了，用同样的方法。
+
+还有cat_app 这个命名我们把他重构了，不再是fleet中的cat的作用了，我们现在把他定义为获得这个应用的profile文件。直接到对应的文件夹下去读就可以了。
+get_port这个命令，是在start_common的时候，把这个程序的端口号，写到etcd的/services/port/username/appname这里，然后调用这个命令的时候，使用etcdctl get命令来做。
+
+至于start_app stop_app get_journal这些命令，直接调用fleet的命令就可以了。

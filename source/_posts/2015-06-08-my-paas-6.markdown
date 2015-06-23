@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "设计自己的paas平台nap六----配置应用设置参数"
+title: "设计自己的paas平台nap 6----配置应用设置参数"
 date: 2015-06-08 09:08:40 +0800
 comments: true
 categories: 
