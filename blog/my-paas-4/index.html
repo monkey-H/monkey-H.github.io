@@ -9,7 +9,7 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="写在前面 在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志， &hellip;">
+  <meta name="description" content="写在前面 我们之后可能会遇到这个问题。部署成功了一个web应用，我们需要给这个应用注册一个web地址，并且返回给用户，那么，如何得到这个应用的ip地址，端口号等信息呢？在fleet的机制中，有个discovery机制，这个机制就很好的完成了这个工作，其主要工作原理就是，运行一个discovery &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -86,7 +86,7 @@
 
 <div class="entry-content"><h3>写在前面</h3>
 
-<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+<p>我们之后可能会遇到这个问题。部署成功了一个web应用，我们需要给这个应用注册一个web地址，并且返回给用户，那么，如何得到这个应用的ip地址，端口号等信息呢？在fleet的机制中，有个discovery机制，这个机制就很好的完成了这个工作，其主要工作原理就是，运行一个discovery service，通过不断轮询对应的service有没有启动起来，如果启动起来了，就把其端口号和ip地址等信息写入到etcd中去，当需要的时候，再从etcd中取。下面，我们来简单介绍一些这些在nap中的代码实现。</p>
 
 <!--more-->
 

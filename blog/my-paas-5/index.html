@@ -9,7 +9,7 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="写在前面 在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志， &hellip;">
+  <meta name="description" content="写在前面 nap在对应用进行部署时，应该有一个判断机制，如果这个应用已经是最新的了，那么我们就直接返回最新的结果就可以了，不需要重新部署。而且我们的nap到现在为止，都是只完成了对Dockerfile应用的简单支持，简单一些，我们可以实现maven应用的支持。下面，我们就上面两个问题，进行简单介绍 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -86,7 +86,7 @@
 
 <div class="entry-content"><h3>写在前面</h3>
 
-<p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
+<p>nap在对应用进行部署时，应该有一个判断机制，如果这个应用已经是最新的了，那么我们就直接返回最新的结果就可以了，不需要重新部署。而且我们的nap到现在为止，都是只完成了对Dockerfile应用的简单支持，简单一些，我们可以实现maven应用的支持。下面，我们就上面两个问题，进行简单介绍。</p>
 
 <!--more-->
 
