@@ -9,8 +9,8 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="问题与解答 Q: no journal files were found
-A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。 &hellip;">
+  <meta name="description" content="Q &amp; A 实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需 问题与解答 Q: no journal files were found
+A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,7 +85,14 @@ A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx
   </header>
 
 
-<div class="entry-content"><h3>问题与解答</h3>
+<div class="entry-content"><h3>Q &amp; A</h3>
+
+<p>实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需</p>
+
+<!--more-->
+
+
+<h3>问题与解答</h3>
 
 <p>Q: no journal files were found
 A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。但是，由于某些原因，比如网上说的：
