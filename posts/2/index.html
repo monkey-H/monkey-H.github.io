@@ -9,7 +9,7 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="写在前面 在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志， &hellip;">
+  <meta name="description" content="写在前面 前面一片文章我们主要介绍了我们的paas平台nap所基于的技术基础，这篇文章，我们首先介绍一下nap的整体思路，然后通过从客户端和服务器端的一些设计，一步一步地来了解如何设计一个完整的paas平台。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,42 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/my-paas-2/">设计自己的paas平台nap 2&#8212;-分解客户端和服务器端</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-18T16:20:46+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:20 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>写在前面</h3>
+
+<p>前面一片文章我们主要介绍了我们的paas平台nap所基于的技术基础，这篇文章，我们首先介绍一下nap的整体思路，然后通过从客户端和服务器端的一些设计，一步一步地来了解如何设计一个完整的paas平台。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/my-paas-2/">继续阅读;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -391,42 +427,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-04T18:48:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:48 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/dokkuyuan-ma-jie-du-san/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -444,7 +444,11 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/my-paas-11/">设计自己的paas平台nap 11&#8212;-启动应用类型进一步理解</a>
+        <a href="/blog/suibi/">随笔</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/my-paas-11/">设计自己的paas平台nap 11&#8212;-mapreduce应用</a>
       </li>
     
       <li class="post">

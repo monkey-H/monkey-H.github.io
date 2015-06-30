@@ -5,12 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Vpn添加路由规则+octopress Push报错 - Welcome to monkey-H&#8217;s blog</title>
+  <title>随笔 - Welcome to monkey-H&#8217;s blog</title>
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="写在前面 关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。 vpn添加路由规则
-国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是 &hellip;">
+  <meta name="description" content="问题与解答 Q: no journal files were found
+A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +19,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://monkey-h.github.io/blog/net-add/">
+  <link rel="canonical" href="http://monkey-h.github.io/blog/suibi/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
@@ -69,7 +69,7 @@
   
   <header>
     
-      <h1 class="entry-title">Vpn添加路由规则+octopress Push报错</h1>
+      <h1 class="entry-title">随笔</h1>
     
     
       <p class="meta">
@@ -78,32 +78,27 @@
 
 
 
-<time class='entry-date' datetime='2015-05-07T14:56:51+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:56 pm</span></time>
+<time class='entry-date' datetime='2015-06-29T12:41:06+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:41 pm</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><h3>写在前面</h3>
+<div class="entry-content"><h3>问题与解答</h3>
 
-<p>关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。</p>
-
-<!--more-->
-
-
-<ul>
-<li><p>vpn添加路由规则
-国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是，他是转发所有流量的，就是说，他不会做一个判断，所有的流量都通过他的VPN转发出去。比如访问个百度的网址，也是先转到国外他的vpn服务器，然后从那里转发出来，查找国内的百度服务器。这样会相当慢，当然了，也不是很慢，况且我们翻墙主要是为了访问国外的资源，国内基本不怎么访问，也就无所谓了。但是，有一些情况比较特殊，因为我经常要访问我们局域网内的服务器，这就比较麻烦了，因为你转发到国外的服务器上之后，再转发给国内的时候，是找不到我们局域网内的服务器的，这就需要添加一个路由规则，让所有有关访问局域网内的ip的请求，不走vpn，而是走我们局域网内的路由器就可以了。
-<code>sudo /sbin/route add -net 114.212 192.168.1.1</code>
-114.212是我们局域网的ip地址段，后面的192.168.1.1是路由器的ip地址。</p></li>
-<li><p>octopress rake gen_deploy报错
-搭建好的octopress，刚开始gen_deploy的时候可以push，但是后来重启了机器，就不可以了，报错
-<img src="http://i1066.photobucket.com/albums/u407/5681713/everything/octopress_zpsuen9rm2b.png" alt="" />
-经查证，好像是本地的rsa key没有加入到本地的钥匙中，添加进去就可以了。
-<code>ssh-add ~/.ssh/id_rsa</code></p></li>
-</ul>
-
+<p>Q: no journal files were found
+A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。但是，由于某些原因，比如网上说的：
+I&rsquo;ve finally pinpoint the cause: I&rsquo;m logging in too early. Somehow, if you login after just few secs from the instantiation of the GCE machine, my user will not be added to the group systemd-journal. Thus, journalctl as normal user returns &ldquo;No journal files were found&rdquo;, while doing sudo journalctl returns the logs.
+What&rsquo;s worse is that the situation is then permanent: even if I log out, the user will never be added to the group systemd-journal, but I guess I&rsquo;m in a limit scenario.
+解决办法，
+sudo usermod -a -G systemd-journal bob
+id -a bob
+但是对我没用。有一种简单粗暴的方法。
+在用户目录/var/log/journal/machine-id/路径下
+所有的文件的权限都是root的，改成nap的。
+shdo chown nap ./*
+就可以了。过于残暴，可能会引起某些问题。</p>
 </div>
 
 
@@ -119,7 +114,7 @@
 
 
 
-<time class='entry-date' datetime='2015-05-07T14:56:51+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:56 pm</span></time>
+<time class='entry-date' datetime='2015-06-29T12:41:06+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:41 pm</span></time>
       
 
 
@@ -127,7 +122,7 @@
     
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/net-add/" data-via="" data-counturl="http://monkey-h.github.io/blog/net-add/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/suibi/" data-via="" data-counturl="http://monkey-h.github.io/blog/suibi/" >Tweet</a>
   
   
   
@@ -136,10 +131,8 @@
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/flannel-registry/" title="Previous Post: 在coreos系统下，同时添加flannel和私有仓库的参数">&laquo; 在coreos系统下，同时添加flannel和私有仓库的参数</a>
+        <a class="basic-alignment left" href="/blog/my-paas-11/" title="Previous Post: 设计自己的paas平台nap 11----mapreduce应用">&laquo; 设计自己的paas平台nap 11&#8212;-mapreduce应用</a>
       
-      
-        <a class="basic-alignment right" href="/blog/hadoop-4/" title="Next Post: 图的三角形计数">图的三角形计数 &raquo;</a>
       
     </p>
   </footer>

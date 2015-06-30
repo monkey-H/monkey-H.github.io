@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-06-26T07:50:45+08:00</updated>
+  <updated>2015-06-30T08:34:28+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -14,15 +14,65 @@
 
   
   <entry>
-    <title type="html"><![CDATA[设计自己的paas平台nap 11----启动应用类型进一步理解]]></title>
+    <title type="html"><![CDATA[随笔]]></title>
+    <link href="http://monkey-h.github.io/blog/suibi/"/>
+    <updated>2015-06-29T12:41:06+08:00</updated>
+    <id>http://monkey-h.github.io/blog/suibi</id>
+    <content type="html"><![CDATA[<h3>问题与解答</h3>
+
+<p>Q: no journal files were found
+A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。但是，由于某些原因，比如网上说的：
+I&rsquo;ve finally pinpoint the cause: I&rsquo;m logging in too early. Somehow, if you login after just few secs from the instantiation of the GCE machine, my user will not be added to the group systemd-journal. Thus, journalctl as normal user returns &ldquo;No journal files were found&rdquo;, while doing sudo journalctl returns the logs.
+What&rsquo;s worse is that the situation is then permanent: even if I log out, the user will never be added to the group systemd-journal, but I guess I&rsquo;m in a limit scenario.
+解决办法，
+sudo usermod -a -G systemd-journal bob
+id -a bob
+但是对我没用。有一种简单粗暴的方法。
+在用户目录/var/log/journal/machine-id/路径下
+所有的文件的权限都是root的，改成nap的。
+shdo chown nap ./*
+就可以了。过于残暴，可能会引起某些问题。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台nap 11----mapreduce应用]]></title>
     <link href="http://monkey-h.github.io/blog/my-paas-11/"/>
     <updated>2015-06-17T10:11:07+08:00</updated>
     <id>http://monkey-h.github.io/blog/my-paas-11</id>
     <content type="html"><![CDATA[<h3>写在前面</h3>
 
-<p>这篇文章的内容还没想清楚，想清楚了再继续写。</p>
+<p>在前面的文章中，我们已经对mpi应用，maven工程应用做了一些介绍，那么转接到先部署，再启动的模式中，也只要对其有些修改即可，总体的设计理念是没有变化的。但是，我们现在要介绍的这个mapreduce应用却不是这样。mapreduce应用和mpi应用都属于多个容器支撑的应用，但是，mapreduce和mpi最大的不同是，mpi应用，只需要master节点知道所有的slave节点的ip地址即可。但是，mapreduce需要所有的节点，都知道其他节点的ip地址信息，这是一个很大的难点，我们接下来会详细叙述。</p>
 
-<h3>nap平台有关应用启动类型的进一步理解</h3>
+<h3>nap平台mapreduce应用设计分析</h3>
+
+<p>在我看来，mapreduce应用的支撑设计，应该包括四个阶段。
+- 跑起来masters,slaves
+- 获取到这些masters，slaves的ip地址。
+- 把这些ip地址都写入到masters和slaves中去。
+- 让masters跑要跑的命令。</p>
+
+<p>接下来，我们一条一条的说。</p>
+
+<h4>启动masters和slaves</h4>
+
+<p>这一条和之前设计的启动mpi的master和slave是一样的。通过一个unit启动master和slave，然后通过discovery来发现启动的容器的端口号等信息，并且写入到etcd中去，为下一步做打算。</p>
+
+<h4>获取ip信息</h4>
+
+<p>这一条也比较简单，前面已经把这些容器的ip信息都写入到了etcd中，所以，只要去etcd中去读取，并且记录下来就可以了。</p>
+
+<h4>写入ip信息到master，slave中</h4>
+
+<p>这一步其实是很有难点的。我们如何把这些ip信息写入到已经跑起来的容器中呢？虽然fleetctl ssh可以进入到一个容器中，但是，在bash命令中，那相当于重启了一个终端，如何把在这个终端中写入东西？我是一个bash新手，不会。但是我在想，是不是有一种重定向的设定，可以在里面写入命令。我之后会尝试查找这方面的内容，但是现在，我想到了另一种，虽然比较麻烦，但是感觉更加正确的方法。我用一个可以无密码登陆到master和slave的容器，这个容器就干一件事，把master和slave节点信息文件，scp到master和slave节点上去。</p>
+
+<h4>让masters跑命令</h4>
+
+<p>这也是一个难点。我们都知道docker logs只能输出第一线程的日志，我们这里跑起来master，slave的时候，已经不是第一线程了，所以，我们这里已经失去了一个最简单的获取日志的方式，但是我突然想到fleetctl journal和fleetctl cat的不同，好像这个可以解决。继续回到如何让master跑命令的问题，像上一个问题一样，我们不可能用docker exec -ti container /bin/bash这样，进去去执行，但是，我也希望通过上面的方法来解决这个问题。用一个可以无密码登陆到master节点上的container，这个container通过ssh的方式，使master运行需要运行的命令。</p>
+
+<h4>总结</h4>
+
+<p>好了，该说的都说了，继续实践。如果有问题，这里会继续补充。代码部分在github.com/monkey-h/nap</p>
 ]]></content>
   </entry>
   
@@ -2763,90 +2813,6 @@ docker0也已经是我们指定的ip了。</p>
 这个run我们可以看到，应该是在create之后做的事情，这个run的前提是$DOKKU_ROOT目录下，已经存在了需要run的应用的目录，包括里面应有的文件。</li>
 </ul>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Dokku源码解读三]]></title>
-    <link href="http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-san/"/>
-    <updated>2015-05-04T18:48:02+08:00</updated>
-    <id>http://monkey-h.github.io/blog/dokkuyuan-ma-jie-du-san</id>
-    <content type="html"><![CDATA[<h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-<!--more-->
-
-
-<h3>dokku文件源码解读</h3>
-
-<p>上一节说到执行dokku receive $APP，找到文件中对应的代码
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-receive_zpsg2szjbzf.png" alt="dokku-receive.png" />
-其实，在执行这段代码之前，还有一些命令要执行，这些命令是主要是一些准备工作，包括环境变量的设置，插件的安装激活，还有原始命令的执行。
-在receive的case里面，主要做了四件事情，包括cleanup，build，release和deploy。
-+ cleanup主要有两行命令组成，第一行，是删除paas平台中，状态为推出的container，可以看到，他是直接通过docker的命令执行的。关于docker，如果没有接触过的话，可以看看<a href="docker.com" title="docker 官网">这里</a>。第二行命令，是删除一些没有打标签的image，这些image一般是在生成新的image的过程中产生的临时文件。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-cleanup_zpsqkmhu8qc.png" alt="dokku-cleanup.png" />
-+ build是用来产生要部署的程序的image的。build和release的case在plugins/00_dokku-standard/command里面可以找到。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-build_zpso6pqkn0n.png" alt="dokku-build.png" />
-dokku支持两种部署应用的方式，一种是heroku的标准格式，另外一种是dockerfile的格式，我们可以从代码的两个case中看到。我们先看简单的，dockerfile更加简单一些。
-dockerfile的case中，第一步，查看dockerfile中有没有写EXPOSE，如果有，取出想要暴露的端口，并通过dokku config:set-norestart命令，设置成对应程序的环境变量。dokku config:set-norestart命令我们之后再解释。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>pluginhook pre-build-dockerfile "$APP"
-</span><span class='line'>pluginhook post-build-dockerfile "$APP"</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这两个插件在后来的更新中都去除了，所以，这两句不会执行。
-还有一句<code>docker build -t .</code>这个是docker的标准的从当前路径，查找Dockerfile，生成image的语法，这样就生成了一个用来部署应用的image。
-除了dockerfile的case，还有一个buildstep的case。在我们安装dokku这个paas平台的时候，就在makefile里面做了一个特殊的image
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/buildstep_zpsdvkmpj8u.png" alt="buildstep.png" />
-这个image是安装了heroku标准解释程序的image。而我们后来上传的按照heroku标准写的应用程序，就是通过这个东西来执行的。在dokku文件里，</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>export DOKKU_IMAGE=${DOKKU_IMAGE:="progrium/buildstep"}</span></code></pre></td></tr></table></div></figure>
-
-
-<p>也就是在这个case里面的$DOKKU_IMAGE，实际上就是之前做的那个image，前面的几行是利用这个可以解释标准heroku的image跑一个container，然后在里面解压需要部署的应用，也就是相当于把应用拷贝进去，之后，commit成一个镜像。中间的几行，查看是否有一些container在启动的过程中的特殊的参数，加上去，执行build，heroku就是通过这个东西来部署应用。部署好了之后，commit成一个镜像。最后一部分，是一些build之后的处理，但是在后来的版本这些东西已经取消了。
-+ release部分。和build类似，release也是有两个部分，dockerfile和buildstep。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-release_zpss2dcay6b.png" alt="dokku-release.png" />
-dockerfile的部分没有做任何事情，buildstep部分，是把dokku paas平台的一些参数设置导入到了container之中，具体是什么参数，我们可以看到
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/env_zpsjkxrnn0s.png" alt="" />
-主要是等待时间等。这里面的<code>if [[ -f "$DOKKU_ROOT/ENV" ]]</code>是去判断是否存在这个文件，关于if和文件的组合判断，可以去看我的另外一篇blog里面介绍的东西。<a href="http://monkey-h.github.io/blog/bash-trick/" title="bash trick">点击这里</a>
-+ deploy部分
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/dokku-deploy_zpsbofppa5l.png" alt="deploy" />
-在deploy的开始阶段，首先执行了<code>pluginhook pre-build $APP</code>这段代码调用了plugin的一个插件，pre-build，这个插件可以在plugins/build-env/pre-build中找到
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/pre-build_zpsktyjirfr.png" alt="pre-build" />
-这个插件的作用也是十分明显的，第一，把原来build阶段的环境变量设置成应用的变量（大部分还是一些等待时间等变量），第二，把所有的build阶段的参数，都累加起来，再启动一个容器，把这些变量添加到这个容器中，然后把这个容器commit成一个image，让接下来的启动都从这个image中启动。
-接下来，就需要启动这个app了。首先判断是否已经起了一个这样的应用，如果已经启动了，那么我们就需要知道已经启动的这个容器的id是多少。由于我们在每次部署应用的时候，都会把他的id设置到$DOKKU_ROOOT/$APP/CONTAINER里面去，所以，直接读出来这个东西就ok了。为什么要知道这个id，是由于我们后面要把旧的container杀死，所以必须知道。接下来，DOCKER_ARGS参数已经在后来的版本中取消了，不用看了。要注意，我们执行了这么一句话。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>BIND_EXTERNAL=$(pluginhook bind-external-ip $APP)</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这个插件在plugins/nginx-vhost/bind-external-ip里面
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/bind-ip_zpsejjdrghn.png" alt="" />
-这个函数是通过查看应用的repository，看看有没有设置绑定外网ip的参数，如果有，就返回true，否则返回false.</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>is_image_buildstep_based "$IMAGE"</span></code></pre></td></tr></table></div></figure>
-
-
-<p>是用来判断我们之前通过build和release阶段的时候，出来的image是通过dockerfile出来的，还是通过标准heroku来解析的。如果是前者，那么，Dockerfile中应该制定了程序入口，端口之类的东西，如果没有端口指定也不影响，如果是后者，在执行docker run的时候，只要执行/start web实际上就是启动了应用容器，这是由heroku来做的事情。
-接下来通过我们之前做的是否制定了ip来判断，如果没有指定ip，那么，这个应用容器的ip就是跑起来的时候的docker分配的ip地址，通过</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>docker inspect --format '' $id</span></code></pre></td></tr></table></div></figure>
-
-
-<p>来查询。而port当Dockerfile中没有指定的时候，就默认是5000，如果制定了，就是指定的端口。启动应用容器也是很简单，加上-e PORT的参数，docker的其他参数，image我们也制定好了，$START_CMD也是，如果是buildstep的就是/start web，如果是dockerfile的，那么就是dockerfile中定义的entrypoint。这样就启动了应用容器。如果指定了ip，那么也是差不多的，只不过，容器的ip不再是docker分配的地址，启动的时候，参数照样加，不过端口指定为容器的5000端口，至于host主机暴露的端口是多少，我们可以通过<code>docker port $id container_ip</code>获得。而ip就是本机了。
-接着，做一个对部署的应用的检查，如果成功了，就可以使用新的容器了。
-使用新的容器，就要把原来的容器的id啊，ip啊，port啊之类的参数都修改了，那么再次有用户访问的时候，就是新的容器了。
-新的容器部署好了之后，还要把旧的容器给删除，<code>docker kill $oldid</code>就可以了。
-+ url
-最后的时候，还做了一件事，就是，部署好了，怎么访问呢？或者说怎么告诉用户怎么访问呢？这就用到了<code>dokku url "$APP"</code>
-<img src="http://i1066.photobucket.com/albums/u407/5681713/octopress/url_zps7uw8gcug.png" alt="" />
-从这里可以看到，这个函数就是打印出了IP地址和端口号，也就是docker部署container的标准访问方式。</p>
 ]]></content>
   </entry>
   
