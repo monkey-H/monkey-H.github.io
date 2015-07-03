@@ -9,7 +9,7 @@
   <meta name="author" content="monkey-H">
 
   
-  <meta name="description" content="写在前面 前面一片文章我们主要介绍了我们的paas平台nap所基于的技术基础，这篇文章，我们首先介绍一下nap的整体思路，然后通过从客户端和服务器端的一些设计，一步一步地来了解如何设计一个完整的paas平台。 ">
+  <meta name="description" content="写在前面 有了上一篇关于客户端和服务器端的设计介绍，我们就可以简单地把这两者联系起来，构成一个paas平台的小demo。我们这里通过对最简单的应用类型，有dockerfile的应用，做一次完整的，从push到解释为systemd的service，到最终运行在单机服务器上的过程，首先跑通这个流程， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,42 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/my-paas-3/">设计自己的paas平台nap 3&#8212;-整体流程</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-05-24T12:20:17+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:20 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>写在前面</h3>
+
+<p>有了上一篇关于客户端和服务器端的设计介绍，我们就可以简单地把这两者联系起来，构成一个paas平台的小demo。我们这里通过对最简单的应用类型，有dockerfile的应用，做一次完整的，从push到解释为systemd的service，到最终运行在单机服务器上的过程，首先跑通这个流程，然后再在这个基础上，增加新的应用类型，和晚上操作。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/my-paas-3/">继续阅读;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -391,42 +427,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-05T19:50:07+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>7:50 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
-
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/dokkuyuan-ma-jie-du-si/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -442,6 +442,10 @@
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/hello/">Hello</a>
+      </li>
     
       <li class="post">
         <a href="/blog/suibi/">随笔</a>
