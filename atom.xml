@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-07-03T10:46:43+08:00</updated>
+  <updated>2015-07-03T10:53:29+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -18,7 +18,7 @@
     <link href="http://monkey-h.github.io/blog/hello/"/>
     <updated>2015-07-03T10:41:02+08:00</updated>
     <id>http://monkey-h.github.io/blog/hello</id>
-    <content type="html"><![CDATA[<p><a href="monkey-h.github.io/download/hello">download</a></p>
+    <content type="html"><![CDATA[<p><a href="../../download/hello">download</a></p>
 ]]></content>
   </entry>
   
