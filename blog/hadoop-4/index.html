@@ -1,90 +1,81 @@
 
-<!DOCTYPE html>
-<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
-<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
-<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<!DOCTYPE HTML>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>图的三角形计数 - Welcome to monkey-H&#8217;s blog</title>
-  <meta name="author" content="monkey-H">
+	<meta charset="utf-8">
+	<title>图的三角形计数 - Welcome to monkey-H&#8217;s blog</title>
+	<meta name="author" content="monkey-H">
 
-  
-  <meta name="description" content="实验背景 图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。 &hellip;">
-  
+	
+	<meta name="description" content="实验背景 图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。 &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <!-- http://t.co/dKP3o1e -->
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  
-  <link rel="canonical" href="http://monkey-h.github.io/blog/hadoop-4/">
-  <link href="/favicon.png" rel="icon">
-  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
-  <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
-  <script src="/javascripts/octopress.js" type="text/javascript"></script>
-  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-
-  
-
+	<link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
 </head>
 
-<body   >
-  <header role="banner"><hgroup>
-  <h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
-  
-    <h2>学习日记</h2>
-  
-</hgroup>
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="https://www.google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:monkey-h.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="https://www.google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:monkey-h.github.io">
+	</form>
+</nav>
 
 </header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
-  
-</ul>
-  
-<form action="https://www.google.com/search" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="sitesearch" value="monkey-h.github.io">
-    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
-  </fieldset>
-</form>
-  
-<ul class="main-navigation">
-  <li><a href="/">Blog</a></li>
-  <li><a href="/blog/archives">Archives</a></li>
-</ul>
-
-</nav>
-  <div id="main">
-    <div id="content">
-      <div>
-<article class="hentry" role="article">
-  
-  <header>
-    
-      <h1 class="entry-title">图的三角形计数</h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-08T09:05:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:05 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-<div class="entry-content"><h3>实验背景</h3>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">图的三角形计数</h2>
+	<div class="entry-content"><h3>实验背景</h3>
 
 <p>图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。
 换句话说，这TM是mapreduce课程的作业啊，不做也得做啊！！！</p>
@@ -569,199 +560,47 @@ reduce就是比对。我们找到每个key后面的value中，有没有#，如�
 </div>
 
 
-  <footer>
-    <p class="meta">
-      
-  
-
-<span class="byline author vcard">Posted by <span class="fn">monkey-H</span></span>
-
-      
+<div class="meta">
+	<div class="date">
 
 
 
 
-<time class='entry-date' datetime='2015-05-08T09:05:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:05 am</span></time>
-      
+May 8th, 2015</div>
+	<div class="tags">
 
-
-    </p>
-    
-      <div class="sharing">
-  
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://monkey-h.github.io/blog/hadoop-4/" data-via="" data-counturl="http://monkey-h.github.io/blog/hadoop-4/" >Tweet</a>
-  
-  
-  
 </div>
-
-    
-    <p class="meta">
-      
-        <a class="basic-alignment left" href="/blog/net-add/" title="Previous Post: vpn添加路由规则+octopress push报错">&laquo; vpn添加路由规则+octopress push报错</a>
-      
-      
-        <a class="basic-alignment right" href="/blog/my-paas-1/" title="Next Post: 设计自己的paas平台nap 1----背景知识">设计自己的paas平台nap 1&#8212;-背景知识 &raquo;</a>
-      
-    </p>
-  </footer>
+	
+</div>
 </article>
 
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		
+	</div>
+	
 </div>
 
-<aside class="sidebar">
-  
-    <section>
-  <h1>Recent Posts</h1>
-  <ul id="recent_posts">
-    
-      <li class="post">
-        <a href="/blog/hello/">Hello</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/suibi/">随笔</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-11/">设计自己的paas平台nap 11&#8212;-mapreduce应用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-10/">设计自己的pass平台nap 10&#8212;-统一接口规范</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-9/">设计自己的paas平台nap 9&#8212;-统一paas平台入口</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-8/">设计自己的paas平台nap 8&#8212;-支持mpi应用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-7/">设计自己的paas平台nap 7&#8212;-单应用多实例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-6/">设计自己的paas平台nap 6&#8212;-配置应用设置参数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-5/">设计自己的paas平台nap 5&#8212;-maven规范和自发现服务</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-4/">设计自己的paas平台nap 4&#8212;-fleet集群部署</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-3/">设计自己的paas平台nap 3&#8212;-整体流程</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-2/">设计自己的paas平台nap 2&#8212;-分解客户端和服务器端</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-1/">设计自己的paas平台nap 1&#8212;-背景知识</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/hadoop-4/">图的三角形计数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/bash-trick/">Bash 脚本语言学习收获</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/hello-world/">Hello World</a>
-      </li>
-    
-  </ul>
-</section>
 
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2015
 
-
-
-
-  
-</aside>
-
-
-    </div>
-  </div>
-  <footer role="contentinfo"><p>
-  Copyright &copy; 2015 - monkey-H -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
-</p>
-<p>
-<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
-</script>
-<span id="busuanzi_container_site_uv">
-    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
-</span>
-</p>
+    monkey-H
 
 </footer>
-  
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
 
-
-
-
-
-
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = '//platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
 
 
 

@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-07-03T10:53:29+08:00</updated>
+  <updated>2015-07-09T20:56:05+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Hello]]></title>
+    <title type="html"><![CDATA[hello]]></title>
     <link href="http://monkey-h.github.io/blog/hello/"/>
     <updated>2015-07-03T10:41:02+08:00</updated>
     <id>http://monkey-h.github.io/blog/hello</id>
@@ -1965,7 +1965,7 @@ reduce就是比对。我们找到每个key后面的value中，有没有#，如�
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[Vpn添加路由规则+octopress Push报错]]></title>
+    <title type="html"><![CDATA[vpn添加路由规则+octopress push报错]]></title>
     <link href="http://monkey-h.github.io/blog/net-add/"/>
     <updated>2015-05-07T14:56:51+08:00</updated>
     <id>http://monkey-h.github.io/blog/net-add</id>
@@ -2195,7 +2195,7 @@ reduce就是比对。我们找到每个key后面的value中，有没有#，如�
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[创建不需要输入密码就可以登录的docker Image]]></title>
+    <title type="html"><![CDATA[创建不需要输入密码就可以登录的docker image]]></title>
     <link href="http://monkey-h.github.io/blog/ssh-image/"/>
     <updated>2015-05-06T16:55:39+08:00</updated>
     <id>http://monkey-h.github.io/blog/ssh-image</id>
@@ -2244,7 +2244,7 @@ reduce就是比对。我们找到每个key后面的value中，有没有#，如�
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[使用mtt作为mpi的benchmark 测试docker Container计算集群性能]]></title>
+    <title type="html"><![CDATA[使用mtt作为mpi的benchmark 测试docker container计算集群性能]]></title>
     <link href="http://monkey-h.github.io/blog/mpi-benchmark/"/>
     <updated>2015-05-06T16:31:43+08:00</updated>
     <id>http://monkey-h.github.io/blog/mpi-benchmark</id>
@@ -2554,7 +2554,7 @@ docker0也已经是我们指定的ip了。</p>
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[Coreos集群离线安装]]></title>
+    <title type="html"><![CDATA[coreos集群离线安装]]></title>
     <link href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/"/>
     <updated>2015-05-06T09:54:34+08:00</updated>
     <id>http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang</id>

@@ -1,594 +1,436 @@
 
-<!DOCTYPE html>
-<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
-<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
-<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<!DOCTYPE HTML>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>Welcome to monkey-H&#8217;s blog</title>
-  <meta name="author" content="monkey-H">
+	<meta charset="utf-8">
+	<title>Welcome to monkey-H&#8217;s blog</title>
+	<meta name="author" content="monkey-H">
 
-  
-  <meta name="description" content="写在前面 有了上一篇关于客户端和服务器端的设计介绍，我们就可以简单地把这两者联系起来，构成一个paas平台的小demo。我们这里通过对最简单的应用类型，有dockerfile的应用，做一次完整的，从push到解释为systemd的service，到最终运行在单机服务器上的过程，首先跑通这个流程， &hellip;">
-  
+	
+	<meta name="description" content="写在前面 有了上一篇关于客户端和服务器端的设计介绍，我们就可以简单地把这两者联系起来，构成一个paas平台的小demo。我们这里通过对最简单的应用类型，有dockerfile的应用，做一次完整的，从push到解释为systemd的service，到最终运行在单机服务器上的过程，首先跑通这个流程， &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-  <!-- http://t.co/dKP3o1e -->
-  <meta name="HandheldFriendly" content="True">
-  <meta name="MobileOptimized" content="320">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  
-  <link rel="canonical" href="http://monkey-h.github.io/posts/2/">
-  <link href="/favicon.png" rel="icon">
-  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
-  <link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
-  <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
-  <script src="/javascripts/octopress.js" type="text/javascript"></script>
-  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-
-  
-
+	<link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
 </head>
 
-<body   >
-  <header role="banner"><hgroup>
-  <h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
-  
-    <h2>学习日记</h2>
-  
-</hgroup>
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="https://www.google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:monkey-h.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="https://www.google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:monkey-h.github.io">
+	</form>
+</nav>
 
 </header>
-  <nav role="navigation"><ul class="subscription" data-subscription="rss">
-  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
-  
-</ul>
-  
-<form action="https://www.google.com/search" method="get">
-  <fieldset role="search">
-    <input type="hidden" name="sitesearch" value="monkey-h.github.io">
-    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
-  </fieldset>
-</form>
-  
-<ul class="main-navigation">
-  <li><a href="/">Blog</a></li>
-  <li><a href="/blog/archives">Archives</a></li>
-</ul>
-
-</nav>
-  <div id="main">
-    <div id="content">
-      <div class="blog-index">
-  
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/my-paas-3/">设计自己的paas平台nap 3&#8212;-整体流程</a></h1>
-    
-    
-      <p class="meta">
-        
+	
+		
+	
+	<div id="content" class="inner">
 
 
-
-
-<time class='entry-date' datetime='2015-05-24T12:20:17+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:20 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-3/">
+		
+			设计自己的paas平台nap 3&#8212;-整体流程</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>有了上一篇关于客户端和服务器端的设计介绍，我们就可以简单地把这两者联系起来，构成一个paas平台的小demo。我们这里通过对最简单的应用类型，有dockerfile的应用，做一次完整的，从push到解释为systemd的service，到最终运行在单机服务器上的过程，首先跑通这个流程，然后再在这个基础上，增加新的应用类型，和晚上操作。</p>
 
+
+		
+		<a href="/blog/my-paas-3/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 24th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/my-paas-3/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/my-paas-2/">设计自己的paas平台nap 2&#8212;-分解客户端和服务器端</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-18T16:20:46+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:20 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-2/">
+		
+			设计自己的paas平台nap 2&#8212;-分解客户端和服务器端</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>前面一片文章我们主要介绍了我们的paas平台nap所基于的技术基础，这篇文章，我们首先介绍一下nap的整体思路，然后通过从客户端和服务器端的一些设计，一步一步地来了解如何设计一个完整的paas平台。</p>
 
+
+		
+		<a href="/blog/my-paas-2/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 18th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/my-paas-2/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/my-paas-1/">设计自己的paas平台nap 1&#8212;-背景知识</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-18T14:49:52+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>18</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:49 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-1/">
+		
+			设计自己的paas平台nap 1&#8212;-背景知识</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。</p>
 
+
+		
+		<a href="/blog/my-paas-1/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 18th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/my-paas-1/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/hadoop-4/">图的三角形计数</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-08T09:05:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:05 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>实验背景</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/hadoop-4/">
+		
+			图的三角形计数</a>
+	</h2>
+	<div class="entry-content">
+		<h3>实验背景</h3>
 
 <p>图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。
 换句话说，这TM是mapreduce课程的作业啊，不做也得做啊！！！</p>
 
+
+		
+		<a href="/blog/hadoop-4/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 8th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/hadoop-4/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-07T14:56:51+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:56 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/net-add/">
+		
+			Vpn添加路由规则+octopress Push报错</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。</p>
 
+
+		
+		<a href="/blog/net-add/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 7th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/net-add/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T17:07:40+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:07 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/flannel-registry/">
+		
+			在coreos系统下，同时添加flannel和私有仓库的参数</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>前面我们已经搭建好了一个coreos集群 <a href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/">看这里</a>，正如这篇blog里面说的一样，我们没有外网，所以我们自己搭建了一个私有仓库，方法可以去官网找，很简答的两行命令，这里就不再叙述。既然搭建了私服，我们就希望我们的这个集群使用这个集群。其次，我们搭建了一个集群，我们也希望屏蔽这是一个集群的概念，让用户用起来就像在使用一个主机的服务器一样，所以我们需要<a href="github.com/coreos/flannel">flanel</a>服务。这就涉及到给docker daemon添加多个参数，我们这里记录一下过程。同时，这也是如果在coreos集群中如何运行service的介绍。</p>
 
+
+		
+		<a href="/blog/flannel-registry/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/flannel-registry/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T16:55:39+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:55 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/ssh-image/">
+		
+			创建不需要输入密码就可以登录的docker Image</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。</p>
 
+
+		
+		<a href="/blog/ssh-image/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/ssh-image/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T16:31:43+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>4:31 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/mpi-benchmark/">
+		
+			使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>docker技术已经十分普遍，利用docker来创建多个虚拟机，实现分布式运算也是一种十分便利的方式，但是docker创建的虚拟机和常规的虚拟机，或者和分布式的集群到底有多少性能的差距，docker能不能通过创建多个container的方式实现常规的分布式运算，我们这里使用openmpi的一个benchmark，mtt来做一个验证。</p>
 
+
+		
+		<a href="/blog/mpi-benchmark/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/mpi-benchmark/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T15:20:00+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:20 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">
+		
+			使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>容器技术已经成为了当前技术的潮流，学习容器技术已经刻不容缓。除了原始的warden容器，docker容器之外，coreos也在发展自己的容器技术，rocket，就连之前不看好容器技术的microsoft也开始创建自己的容器技术，nano server。我们这里尝试搭建coreos集群，并安装了flannel服务，用来实现mpi程序的测试。</p>
 
+
+		
+		<a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">继续阅读;</a>
-    </footer>
-  
+	
+</div>
+</article>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-05-06T09:54:34+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:54 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>写在前面</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/coreoschi-xian-an-zhuang/">
+		
+			Coreos集群离线安装</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
 <p>最近要搭建一个coreos集群，但是实验环境中没有外网，这样就不能使用官网的安装方法，整合了一些大牛的安装经验，加上我自己的安装实践，这里做个记录，希望大家可以少踩一些坑。</p>
 
+
+		
+		<a href="/blog/coreoschi-xian-an-zhuang/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
 </div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/coreoschi-xian-an-zhuang/">继续阅读;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  <div class="pagination">
-    
-      <a class="prev" href="/posts/3">&larr; Older</a>
-    
-    <a href="/blog/archives">Blog Archives</a>
-    
-    <a class="next" href="/index.html">Newer &rarr;</a>
-    
-  </div>
+	
 </div>
-<aside class="sidebar">
-  
-    <section>
-  <h1>Recent Posts</h1>
-  <ul id="recent_posts">
-    
-      <li class="post">
-        <a href="/blog/hello/">Hello</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/suibi/">随笔</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-11/">设计自己的paas平台nap 11&#8212;-mapreduce应用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-10/">设计自己的pass平台nap 10&#8212;-统一接口规范</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-9/">设计自己的paas平台nap 9&#8212;-统一paas平台入口</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-8/">设计自己的paas平台nap 8&#8212;-支持mpi应用</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-7/">设计自己的paas平台nap 7&#8212;-单应用多实例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-6/">设计自己的paas平台nap 6&#8212;-配置应用设置参数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-5/">设计自己的paas平台nap 5&#8212;-maven规范和自发现服务</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-4/">设计自己的paas平台nap 4&#8212;-fleet集群部署</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-3/">设计自己的paas平台nap 3&#8212;-整体流程</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-2/">设计自己的paas平台nap 2&#8212;-分解客户端和服务器端</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/my-paas-1/">设计自己的paas平台nap 1&#8212;-背景知识</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/hadoop-4/">图的三角形计数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/net-add/">Vpn添加路由规则+octopress Push报错</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/flannel-registry/">在coreos系统下，同时添加flannel和私有仓库的参数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/ssh-image/">创建不需要输入密码就可以登录的docker Image</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/mpi-benchmark/">使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/coreoschi-xian-an-zhuang/">Coreos集群离线安装</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-si/">Dokku源码解读四</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-san/">Dokku源码解读三</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkuyuan-ma-jie-du-%5B%3F%5D/">Dokku源码解读二</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/dokkudao-di-gan-liao-shi-yao/">Dokku源码解读一</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/bash-trick/">Bash 脚本语言学习收获</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/hello-world/">Hello World</a>
-      </li>
-    
-  </ul>
-</section>
+</article>
 
+<nav id="pagenavi">
+    
+        
+            <a href="/" class="prev">Prev</a>
+        
+    
+    
+        <a href="/posts/3" class="next">Next</a>
+    
+    <div class="center"><a href="/blog/archives">Blog Archives</a></div>
+</nav>
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2015
 
-
-
-
-  
-</aside>
-
-    </div>
-  </div>
-  <footer role="contentinfo"><p>
-  Copyright &copy; 2015 - monkey-H -
-  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
-</p>
-<p>
-<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
-</script>
-<span id="busuanzi_container_site_uv">
-    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
-</span>
-</p>
+    monkey-H
 
 </footer>
-  
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
 
-
-
-
-
-
-
-  <script type="text/javascript">
-    (function(){
-      var twitterWidgets = document.createElement('script');
-      twitterWidgets.type = 'text/javascript';
-      twitterWidgets.async = true;
-      twitterWidgets.src = '//platform.twitter.com/widgets.js';
-      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
-    })();
-  </script>
 
 
 
