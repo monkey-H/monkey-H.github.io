@@ -7,13 +7,13 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="name kind slave_num url port parameters instance_num instance_list monkey_dockerfile
+	<meta name="description" content="name kind slave_num url parameters instance_num fathername monkey_dockerfile
 dockerfile
 0
 github.com
-15438#15439
 arg1#arg2
-0 &hellip;">
+0
+monkey name ip port command &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -97,10 +97,9 @@ arg1#arg2
 <th style="text-align:center;"> kind </th>
 <th style="text-align:center;"> slave_num </th>
 <th style="text-align:center;"> url </th>
-<th style="text-align:center;"> port </th>
 <th style="text-align:center;"> parameters </th>
 <th style="text-align:center;"> instance_num </th>
-<th style="text-align:center;"> instance_list </th>
+<th style="text-align:center;"> fathername </th>
 </tr>
 </thead>
 <tbody>
@@ -109,14 +108,57 @@ arg1#arg2
 <td style="text-align:center;">dockerfile</td>
 <td style="text-align:center;">0</td>
 <td style="text-align:center;">github.com</td>
-<td style="text-align:center;">15438#15439</td>
 <td style="text-align:center;">arg1#arg2</td>
 <td style="text-align:center;">0</td>
-<td style="text-align:center;">monkey_dockerfile_1#monkey_dockerfile_2</td>
+<td style="text-align:center;">monkey</td>
 </tr>
 </tbody>
 </table>
 
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;"> name </th>
+<th style="text-align:center;"> ip </th>
+<th style="text-align:center;"> port </th>
+<th style="text-align:center;"> command </th>
+<th style="text-align:center;"> fathername </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">monkey_dockerfile_1</td>
+<td style="text-align:center;">114.212.189.140</td>
+<td style="text-align:center;">14594#14595</td>
+<td style="text-align:center;">python start.py</td>
+<td style="text-align:center;">monkey_dockerfile</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>mysql_treat</p>
+
+<p>注意，servicename,appname包含了username</p>
+
+<ul>
+<li>get_servicename_list(username) 返回用户服务列表</li>
+<li>get_kind(servicename)返回服务的种类</li>
+<li>get_slave_num(servicename)</li>
+<li>get_url(servicename)</li>
+<li>get_parameters(servicename)</li>
+<li><p>get_instance_num(servicename)</p></li>
+<li><p>get_appname_list(servicename)</p></li>
+<li>get_port(appname)</li>
+<li>get_ip(appname)</li>
+<li>get_command(app_name)</li>
+</ul>
+
+
+<p>set_value(table, column, value, servicename_or_appname)
+get_value(table, column, servicename_or_appname)
+get_list(table, username_or_servicename)</p>
 
 		
 		
