@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 有了上一篇关于客户端和服务器端的设计介绍，我们就可以简单地把这两者联系起来，构成一个paas平台的小demo。我们这里通过对最简单的应用类型，有dockerfile的应用，做一次完整的，从push到解释为systemd的service，到最终运行在单机服务器上的过程，首先跑通这个流程， &hellip;">
+	<meta name="description" content="写在前面 我们之后可能会遇到这个问题。部署成功了一个web应用，我们需要给这个应用注册一个web地址，并且返回给用户，那么，如何得到这个应用的ip地址，端口号等信息呢？在fleet的机制中，有个discovery机制，这个机制就很好的完成了这个工作，其主要工作原理就是，运行一个discovery &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,39 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-4/">
+		
+			设计自己的paas平台nap 4&#8212;-fleet集群部署</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>我们之后可能会遇到这个问题。部署成功了一个web应用，我们需要给这个应用注册一个web地址，并且返回给用户，那么，如何得到这个应用的ip地址，端口号等信息呢？在fleet的机制中，有个discovery机制，这个机制就很好的完成了这个工作，其主要工作原理就是，运行一个discovery service，通过不断轮询对应的service有没有启动起来，如果启动起来了，就把其端口号和ip地址等信息写入到etcd中去，当需要的时候，再从etcd中取。下面，我们来简单介绍一些这些在nap中的代码实现。</p>
+
+
+		
+		<a href="/blog/my-paas-4/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 28th, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -356,39 +389,6 @@ May 6th, 2015</div>
 
 		
 		<a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 6th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/coreoschi-xian-an-zhuang/">
-		
-			Coreos集群离线安装</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>最近要搭建一个coreos集群，但是实验环境中没有外网，这样就不能使用官网的安装方法，整合了一些大牛的安装经验，加上我自己的安装实践，这里做个记录，希望大家可以少踩一些坑。</p>
-
-
-		
-		<a href="/blog/coreoschi-xian-an-zhuang/" class="more-link">继续阅读;</a>
 	</div>
 
 

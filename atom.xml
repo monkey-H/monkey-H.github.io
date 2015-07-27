@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-07-27T12:51:54+08:00</updated>
+  <updated>2015-07-28T07:52:30+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -14,12 +14,41 @@
 
   
   <entry>
-    <title type="html"><![CDATA[设计自己的paas平台nap--数据库服务设计]]></title>
+    <title type="html"><![CDATA[设计自己的paas平台nap 13----代码拆分]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-13/"/>
+    <updated>2015-07-28T07:38:22+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-13</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>我们前面已经做了很多事情，对基本的流程也有了一定的了解，那么现在我们可以做一些完善工作了，虽然这个完善工作的工作量也是巨大的。为了实现平台无关性，我们要想办法把控制逻辑部分，从操作系统层次剥离开来，把控制逻辑部分也在一个容器中实现。为了实现用户的个性化定制，我们需要区别对待不同的用户，把数据层隔离出来。为了实现用户的资源控制和数据信息的集中展示，我们需要数据库部分。等等。</p>
+
+<!--more-->
+
+
+<h3>nap结构再思考</h3>
+
+<p>从前面的分析中，我觉得，我们新的nap平台的设计应该是这样的。
+<img src="../../images/nap+%E7%BB%93%E6%9E%84.png" alt="" /></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台nap 12----数据库服务设计]]></title>
     <link href="http://monkey-h.github.io/blog/my-paas-12/"/>
     <updated>2015-07-22T09:37:43+08:00</updated>
     <id>http://monkey-h.github.io/blog/my-paas-12</id>
-    <content type="html"><![CDATA[<!--more-->
+    <content type="html"><![CDATA[<h3>写在前面</h3>
 
+<p>如果每次获取用户的部署的应用的信息，都需要使用fleet提供的接口进行一定的计算，甚至需要使用一些不友好的方式，比如使用ls来查看有多少个目录，就认为有多少个应用等方式的话，这样是非常的不美观的。我们需要增加一个数据库的组件，用来存储相应的信息，每次需要的时候，就从这里面读取，这样才是正统的设计方式。我们采用mysql来实现数据库服务。</p>
+
+<!--more-->
+
+
+<h3>数据库服务设计</h3>
+
+<p>首先，我们存储了两张表格。一张用来存储service，另外一张用来存储app。名字就用这两个单词来命名。那么，我们都需要存储哪些信息呢？
+对于service而言，我们需要知道这个service的名字，种类（mpi，mapreduce，profile等），如果是mpi或者mapreduce，还需要知道slave节点的个数。service的url，可以调节的参数，和已经部署运行的实例的个数，最后，我们要知道这个service是属于哪一个用户的，这个也很重要。
+对于app而言，我们要知道这个app的名字，ip，port（对外界暴露的端口），boxport(使用shellinabox技术，需要知道暴露的端口)，启动命令（这个对以后启动应用很有用），最后就是这个app属于哪一个service。</p>
 
 <table>
 <thead>
@@ -52,6 +81,7 @@
 <tr>
 <th style="text-align:center;"> name </th>
 <th style="text-align:center;"> ip </th>
+<th style="text-align:center;"> boxport </th>
 <th style="text-align:center;"> port </th>
 <th style="text-align:center;"> command </th>
 <th style="text-align:center;"> fathername </th>
@@ -61,6 +91,7 @@
 <tr>
 <td style="text-align:center;">monkey_dockerfile_1</td>
 <td style="text-align:center;">114.212.189.140</td>
+<td style="text-align:center;">14596</td>
 <td style="text-align:center;">14594#14595</td>
 <td style="text-align:center;">python start.py</td>
 <td style="text-align:center;">monkey_dockerfile</td>
@@ -69,13 +100,15 @@
 </table>
 
 
-<p>mysql_treat</p>
+<p>当然，有了这些还不够，我们还需要有对应于数据库的一些操作的封装和实现。文件命名为mysql_treat。</p>
 
-<p>注意，servicename,appname包含了username</p>
+<p>刚开始，我们的思路是这样的，我们包含了以下一些基本的操作，实现对数据的每个部分的读取和设置。
+注意，servicename,appname包含了username</p>
 
 <ul>
 <li>get_servicename_list(username) 返回用户服务列表</li>
 <li>get_kind(servicename)返回服务的种类</li>
+<li>set_kind(servicename, value)</li>
 <li>get_slave_num(servicename)</li>
 <li>get_url(servicename)</li>
 <li>get_parameters(servicename)</li>
@@ -87,9 +120,12 @@
 </ul>
 
 
-<p>set_value(table, column, value, servicename_or_appname)
-get_value(table, column, servicename_or_appname)
-get_list(table, username_or_servicename)</p>
+<p>但是，后来我们发现，这些函数完全没必要命名的这么奇怪，这样会让编程人员记忆起来非常麻烦，我们可以只实现三个函数，但是这三个函数可以实现上面所有的功能。
+- set_value(table, column, value, servicename_or_appname)
+- get_value(table, column, servicename_or_appname)
+- get_list(table, username_or_servicename)</p>
+
+<p>还是编程经验少，如果多了，应该一开始就想到这种设计方法。</p>
 ]]></content>
   </entry>
   
@@ -2621,247 +2657,6 @@ docker0也已经是我们指定的ip了。</p>
 <p>大功告成，结果如下
 <img src="http://i1066.photobucket.com/albums/u407/5681713/coreos/mpi_zps1vidqse2.png" alt="" />
 要注意的是，我的mpi镜像忘记默认启动ssh服务了。如果运行mpi应用的时候包connect refused，把ssh服务打开就可以了</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[coreos集群离线安装]]></title>
-    <link href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/"/>
-    <updated>2015-05-06T09:54:34+08:00</updated>
-    <id>http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang</id>
-    <content type="html"><![CDATA[<h3>写在前面</h3>
-
-<p>最近要搭建一个coreos集群，但是实验环境中没有外网，这样就不能使用官网的安装方法，整合了一些大牛的安装经验，加上我自己的安装实践，这里做个记录，希望大家可以少踩一些坑。</p>
-
-<!--more-->
-
-
-<h4>刻录安装盘</h4>
-
-<p>官网给的coreos的镜像是一个iso文件，我们需要把他刻成安装盘，中文的大白菜，比较好的UltroISO都可以，我一般都是用后者，不会用大白菜，但是据很多装系统的人描述，大白菜好像挺简单的。
-我是在服务器上安装的，他自带一个iDRAC虚拟控制台，可以直接从iso安装，就省略了刻盘的过程。</p>
-
-<h4>启动服务器</h4>
-
-<p>如果用的iso安装盘，直接从U盘启动，就可以进入到一个系统，如果从iDRAC虚拟控制台，从虚拟CD DVD ISO启动，就可以进入到一个预安装系统，这个系统是用来帮助你安装系统的，这个时候，系统并没有安装到你的服务器上。</p>
-
-<h4>配置临时ip地址</h4>
-
-<p>由于我们没有外网，所以我们需要在本地局域网开一个tomcat服务器，从这个tomcat服务器里面下载我们需要的东西，那么为了可以获得这个tomcat服务器的东西，我们就需要给这台机器临时分配一个内网ip。
-首先，我们先看看我们都有几个网卡。使用<code>ifconfig | less</code>命令。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/ifconfig_zps44mqiukv.png" alt="ifconfig" />
-从上图中我们可以看到，我这台服务器上有两个网卡，我们就使用eno1来分配ip。
-进入到/etc/systemd/network目录，分配内网ip。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/systemd/network
-</span><span class='line'>sudo vi static.network</span></code></pre></td></tr></table></div></figure>
-
-
-<p>编辑static.network如下所示。</p>
-
-<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/staticnetwork_zps6zii1usf.png" alt="staticnetwork" /></p>
-
-<p>注意，Name后面的eno1应该是上一步ifconfig出来的网卡的名称，Address后面的ip地址应该是你要分配的你的子网内的ip地址，网关也是对应的网关，DNS也是你自己的DNS解析器，当然，如果没有，可以不写。
-接下来，使得网络生效。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl restart systemd-networkd</span></code></pre></td></tr></table></div></figure>
-
-
-<p>可以通过ping你的tomcat服务器来看看是否设置成功。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/ping_zpshqq6duxh.png" alt="tomcat" /></p>
-
-<h4>配置tomcat服务器和上传安装脚本，配置文件</h4>
-
-<p>配置tomcat服务器的教材有很多，我们这里就不再描述了，可以随便google一个，然后配置好。我们这里要讲的就是coreos的安装脚本和配置文件。
-<a href="https://raw.githubusercontent.com/coreos/init/master/bin/coreos-install">https://raw.githubusercontent.com/coreos/init/master/bin/coreos-install</a>这个是官网给的安装脚本，首先我们要把他下载下来，然后，把他放在刚刚配置的tomcat路径下，tomcat/webapps/ROOT路径下。然后修改其中的一些内容。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/coreos-install_zpshx5fw1ft.png" alt="install" />
-这里的ip要配置成你本机的ip，并且是可以被服务器连接到的ip。理解起来也很简单，就是把去网上要下载的东西，都从本机下载。那么很明显，我们也要把他要下载的东西，也预先下载下来，放在ROOT目录下。有两个东西，一个是镜像，也就是要安装的东西，一个是签名，是用来检测下载的镜像有没有破损之类的。（我们这里下载的是607版本的，现在应该有更新了）
-镜像地址：<a href="http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2">http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2</a>
-签名地址：<a href="http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2.sig">http://stable.release.core-os.net/amd64-usr/607.0.0/coreos_production_image.bin.bz2.sig</a>
-除了这个东西，还有一个配置文件，叫做cloud-config.yaml。这个文件是安装coreos系统必不可少的文件。我们这里默认要装的东西不多，所以cloud-config.yaml文件就简单了很多，如下。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>#cloud-config
-</span><span class='line'>  
-</span><span class='line'>hostname: coreos1
-</span><span class='line'>  
-</span><span class='line'>coreos:    
-</span><span class='line'>  etcd:      
-</span><span class='line'>    peers: 114.212.189.136:7001
-</span><span class='line'>    addr: 114.212.189.136:4001  
-</span><span class='line'>    peer-addr: 114.212.189.136:7001  
-</span><span class='line'>  units:  
-</span><span class='line'>    - name: etcd.service  
-</span><span class='line'>      command: start  
-</span><span class='line'>    - name: fleet.service  
-</span><span class='line'>      command: start  
-</span><span class='line'>    - name: static.network  
-</span><span class='line'>      content: |  
-</span><span class='line'>        [Match]  
-</span><span class='line'>        Name=eno1
-</span><span class='line'>  
-</span><span class='line'>        [Network]  
-</span><span class='line'>        Address=114.212.189.136/24  
-</span><span class='line'>        Gateway=114.212.189.1
-</span><span class='line'>      DNS=202.119.32.6
-</span><span class='line'>users:    
-</span><span class='line'>  - name: core  
-</span><span class='line'>    ssh-authorized-keys:   
-</span><span class='line'>      - ssh-rsa #你的rsa key
-</span><span class='line'>  - groups:  
-</span><span class='line'>      - sudo  
-</span><span class='line'>      - docker </span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>#cloud-config
-</span><span class='line'>  
-</span><span class='line'>hostname: coreos2
-</span><span class='line'>  
-</span><span class='line'>coreos:    
-</span><span class='line'>  etcd:      
-</span><span class='line'>    peers: 114.212.189.136:7001
-</span><span class='line'>    addr: 114.212.189.143:4001  
-</span><span class='line'>    peer-addr: 114.212.189.143:7001  
-</span><span class='line'>  units:  
-</span><span class='line'>    - name: etcd.service  
-</span><span class='line'>      command: start  
-</span><span class='line'>    - name: fleet.service  
-</span><span class='line'>      command: start  
-</span><span class='line'>    - name: static.network  
-</span><span class='line'>      content: |  
-</span><span class='line'>        [Match]  
-</span><span class='line'>        Name=eno1
-</span><span class='line'>  
-</span><span class='line'>        [Network]  
-</span><span class='line'>        Address=114.212.189.143/24  
-</span><span class='line'>        Gateway=114.212.189.1
-</span><span class='line'>        DNS=202.119.32.6
-</span><span class='line'>users:    
-</span><span class='line'>  - name: core  
-</span><span class='line'>    ssh-authorized-keys:   
-</span><span class='line'>      - ssh-rsa #你的rsa key
-</span><span class='line'>  - groups:  
-</span><span class='line'>      - sudo  
-</span><span class='line'>      - docker </span></code></pre></td></tr></table></div></figure>
-
-
-<p>这是两个服务器的cloud-config.yaml文件的比较，对比一下就很明显了。要修改的地方如下。
-+ hostname 看你心情怎么命名，但是每个最好不一样。
-+ peers 这个是etcd服务建立集群用来发现新机器的，除了第一台服务器安装的时候，是自己的ip，其余的都要使用集群中已经存在的某一个主机的ip。
-+ addr 本机的ip和默认用来配对的4001端口
-+ peer-addr 本机的ip和默认的用来配对的7001端口
-+ Address 本机ip，前面的addr就是根据这个设置的，两个要一致。
-+ Gateway 网关。你的局域网的网关
-+ DNS 域名服务器，如果没有，可以不设置
-+ ssh-rsa rsa密钥，启动服务器后，不能使用密码登陆，一般都是使用rsa密钥对来登陆，所以，这里要配置。至于rsa怎么产生，你可以在一个ubuntu系统上ssh-keygen命令参数，然后把~/.ssh/id_rsa.pub拷贝过来就是了。然后，你就可以从这个ubuntu系统登陆服务器，如果想从别的系统登陆，只要把那个系统的id_rsa.pub拷到服务器的authorized_keys里面就可以了。
-+ 要注意，推荐你直接复制我拷上去的命令，因为cloud-config.yaml文件很特殊，他的语法很奇怪，比如DNS前面不是tab，而是8个空格等，如果这些你用的不对，就很容易出错。</p>
-
-<h4>下载安装脚本和配置文件，并安装</h4>
-
-<p>准备就绪，可以安装了。在服务器上下载需要的安装脚本和配置文件。并给安装脚本赋予权限。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>cd ~
-</span><span class='line'>wget 172.28.11.65:8080/coreos-install
-</span><span class='line'>chmod +x coreos-install
-</span><span class='line'>wget 172.28.11.65:8080/cloud-config143.yaml</span></code></pre></td></tr></table></div></figure>
-
-
-<p>注意这里的cloud-config143.yaml就是我们上一步提到的，不同的机器对应的不同的cloud-config文件。
-安装</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo ./coreos-install -d /dev/sda -C stable -c cloud-config143.yaml</span></code></pre></td></tr></table></div></figure>
-
-
-<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/success_zps7auwgjzn.png" alt="sucess" />
-出现这个界面就说明成功了，然后重启就可以了。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo reboot</span></code></pre></td></tr></table></div></figure>
-
-
-<p>重启好了之后，你可以从你刚刚那个ubuntu系统ssh进去了。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ssh core@114.212.189.143</span></code></pre></td></tr></table></div></figure>
-
-
-<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/login_zpssxrdse5c.png" alt="login" />
-同样的，使用基本相同的步骤，不同的cloud-config.yaml文件，配置其余的机器，配置完成后，在其中的一台机器上，查看集群中有哪些机器。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>fleetctl list-machines</span></code></pre></td></tr></table></div></figure>
-
-
-<p><img src="http://i1066.photobucket.com/albums/u407/5681713/coreos-install/listmachines_zpskqtipnkp.png" alt="" /></p>
 ]]></content>
   </entry>
   

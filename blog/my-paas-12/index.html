@@ -3,17 +3,11 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>设计自己的paas平台nap&#8211;数据库服务设计 - Welcome to monkey-H&#8217;s blog</title>
+	<title>设计自己的paas平台nap 12&#8212;-数据库服务设计 - Welcome to monkey-H&#8217;s blog</title>
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="name kind slave_num url parameters instance_num fathername monkey_dockerfile
-dockerfile
-0
-github.com
-arg1#arg2
-0
-monkey name ip port command &hellip;">
+	<meta name="description" content="写在前面 如果每次获取用户的部署的应用的信息，都需要使用fleet提供的接口进行一定的计算，甚至需要使用一些不友好的方式，比如使用ls来查看有多少个目录，就认为有多少个应用等方式的话，这样是非常的不美观的。我们需要增加一个数据库的组件，用来存储相应的信息，每次需要的时候，就从这里面读取， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -80,9 +74,19 @@ monkey name ip port command &hellip;">
 		
 	
 	<div id="content" class="inner"><article class="post">
-	<h2 class="title">设计自己的paas平台nap&#8211;数据库服务设计</h2>
-	<div class="entry-content"><!--more-->
+	<h2 class="title">设计自己的paas平台nap 12&#8212;-数据库服务设计</h2>
+	<div class="entry-content"><h3>写在前面</h3>
 
+<p>如果每次获取用户的部署的应用的信息，都需要使用fleet提供的接口进行一定的计算，甚至需要使用一些不友好的方式，比如使用ls来查看有多少个目录，就认为有多少个应用等方式的话，这样是非常的不美观的。我们需要增加一个数据库的组件，用来存储相应的信息，每次需要的时候，就从这里面读取，这样才是正统的设计方式。我们采用mysql来实现数据库服务。</p>
+
+<!--more-->
+
+
+<h3>数据库服务设计</h3>
+
+<p>首先，我们存储了两张表格。一张用来存储service，另外一张用来存储app。名字就用这两个单词来命名。那么，我们都需要存储哪些信息呢？
+对于service而言，我们需要知道这个service的名字，种类（mpi，mapreduce，profile等），如果是mpi或者mapreduce，还需要知道slave节点的个数。service的url，可以调节的参数，和已经部署运行的实例的个数，最后，我们要知道这个service是属于哪一个用户的，这个也很重要。
+对于app而言，我们要知道这个app的名字，ip，port（对外界暴露的端口），boxport(使用shellinabox技术，需要知道暴露的端口)，启动命令（这个对以后启动应用很有用），最后就是这个app属于哪一个service。</p>
 
 <table>
 <thead>
@@ -115,6 +119,7 @@ monkey name ip port command &hellip;">
 <tr>
 <th style="text-align:center;"> name </th>
 <th style="text-align:center;"> ip </th>
+<th style="text-align:center;"> boxport </th>
 <th style="text-align:center;"> port </th>
 <th style="text-align:center;"> command </th>
 <th style="text-align:center;"> fathername </th>
@@ -124,6 +129,7 @@ monkey name ip port command &hellip;">
 <tr>
 <td style="text-align:center;">monkey_dockerfile_1</td>
 <td style="text-align:center;">114.212.189.140</td>
+<td style="text-align:center;">14596</td>
 <td style="text-align:center;">14594#14595</td>
 <td style="text-align:center;">python start.py</td>
 <td style="text-align:center;">monkey_dockerfile</td>
@@ -132,13 +138,15 @@ monkey name ip port command &hellip;">
 </table>
 
 
-<p>mysql_treat</p>
+<p>当然，有了这些还不够，我们还需要有对应于数据库的一些操作的封装和实现。文件命名为mysql_treat。</p>
 
-<p>注意，servicename,appname包含了username</p>
+<p>刚开始，我们的思路是这样的，我们包含了以下一些基本的操作，实现对数据的每个部分的读取和设置。
+注意，servicename,appname包含了username</p>
 
 <ul>
 <li>get_servicename_list(username) 返回用户服务列表</li>
 <li>get_kind(servicename)返回服务的种类</li>
+<li>set_kind(servicename, value)</li>
 <li>get_slave_num(servicename)</li>
 <li>get_url(servicename)</li>
 <li>get_parameters(servicename)</li>
@@ -150,9 +158,12 @@ monkey name ip port command &hellip;">
 </ul>
 
 
-<p>set_value(table, column, value, servicename_or_appname)
-get_value(table, column, servicename_or_appname)
-get_list(table, username_or_servicename)</p>
+<p>但是，后来我们发现，这些函数完全没必要命名的这么奇怪，这样会让编程人员记忆起来非常麻烦，我们可以只实现三个函数，但是这三个函数可以实现上面所有的功能。
+- set_value(table, column, value, servicename_or_appname)
+- get_value(table, column, servicename_or_appname)
+- get_list(table, username_or_servicename)</p>
+
+<p>还是编程经验少，如果多了，应该一开始就想到这种设计方法。</p>
 </div>
 
 

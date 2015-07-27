@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content=" 继续阅读; Jul 22nd, 2015 ">
+	<meta name="description" content="写在前面 我们前面已经做了很多事情，对基本的流程也有了一定的了解，那么现在我们可以做一些完善工作了，虽然这个完善工作的工作量也是巨大的。为了实现平台无关性，我们要想办法把控制逻辑部分，从操作系统层次剥离开来，把控制逻辑部分也在一个容器中实现。为了实现用户的个性化定制，我们需要区别对待不同的用户， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -79,12 +79,49 @@
     <article class="post">
 	<h2 class="title">
 		
-		<a href="/blog/my-paas-12/">
+		<a href="/blog/my-paas-13/">
 		
-			设计自己的paas平台nap&#8211;数据库服务设计</a>
+			设计自己的paas平台nap 13&#8212;-代码拆分</a>
 	</h2>
 	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>我们前面已经做了很多事情，对基本的流程也有了一定的了解，那么现在我们可以做一些完善工作了，虽然这个完善工作的工作量也是巨大的。为了实现平台无关性，我们要想办法把控制逻辑部分，从操作系统层次剥离开来，把控制逻辑部分也在一个容器中实现。为了实现用户的个性化定制，我们需要区别对待不同的用户，把数据层隔离出来。为了实现用户的资源控制和数据信息的集中展示，我们需要数据库部分。等等。</p>
+
+
 		
+		<a href="/blog/my-paas-13/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jul 28th, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-12/">
+		
+			设计自己的paas平台nap 12&#8212;-数据库服务设计</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>如果每次获取用户的部署的应用的信息，都需要使用fleet提供的接口进行一定的计算，甚至需要使用一些不友好的方式，比如使用ls来查看有多少个目录，就认为有多少个应用等方式的话，这样是非常的不美观的。我们需要增加一个数据库的组件，用来存储相应的信息，每次需要的时候，就从这里面读取，这样才是正统的设计方式。我们采用mysql来实现数据库服务。</p>
+
+
 		
 		<a href="/blog/my-paas-12/" class="more-link">继续阅读;</a>
 	</div>
@@ -361,39 +398,6 @@ Jun 8th, 2015</div>
 
 
 Jun 3rd, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/my-paas-4/">
-		
-			设计自己的paas平台nap 4&#8212;-fleet集群部署</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>我们之后可能会遇到这个问题。部署成功了一个web应用，我们需要给这个应用注册一个web地址，并且返回给用户，那么，如何得到这个应用的ip地址，端口号等信息呢？在fleet的机制中，有个discovery机制，这个机制就很好的完成了这个工作，其主要工作原理就是，运行一个discovery service，通过不断轮询对应的service有没有启动起来，如果启动起来了，就把其端口号和ip地址等信息写入到etcd中去，当需要的时候，再从etcd中取。下面，我们来简单介绍一些这些在nap中的代码实现。</p>
-
-
-		
-		<a href="/blog/my-paas-4/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 28th, 2015</div>
 	<div class="tags">
 
 </div>
