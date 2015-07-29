@@ -1,0 +1,158 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>设计自己的paas平台nap 14&#8212;-新用户策略 - Welcome to monkey-H&#8217;s blog</title>
+	<meta name="author" content="monkey-H">
+
+	
+	<meta name="description" content="写在前面 我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待， &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="https://www.google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:monkey-h.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="https://www.google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:monkey-h.github.io">
+	</form>
+</nav>
+
+</header>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">设计自己的paas平台nap 14&#8212;-新用户策略</h2>
+	<div class="entry-content"><h3>写在前面</h3>
+
+<p>我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待，使得让每个用户都觉得，他们是在独占使用nap平台的。</p>
+
+<!--more-->
+
+
+<h3>新用户策略</h3>
+
+<p><img src="../../images/nap+architecture.png" alt="" /></p>
+
+<p>在这里的时候，我们可以看到，对于不同的用户，我们应该有不同的数据存储区域。我们现在的做法是，在147这台机器上，不仅有用于存储的moosefs部分，还有总的逻辑控制部分controller，用来存储信息的database数据库部分，运行的应用容器部分，最后，还有针对不同的用户的数据存储部分。
+针对每一个不同的用户，我们都有一个专门的容器，用来存储这个用户的所有数据文件，对于不同的用户，是不能互相访问的。而这个用户所有跑起来的应用容器，也应该直接挂载这个容器，从而所有的数据在所有的属于这个用户的容器中，应该都是可以看到的。这是我们的目的。同时，我们的前台有一个关于用户数据的部分，我们也希望直接通过这个数据容器，直接返回用户。</p>
+
+<p>知道了为什么我们要有这个东西，接下来的问题就是，怎么设计这个东西。首先，由于controller要ssh到数据容器里面做事情，所以，ssh key是必须设置好，可以无密码访问的。其次，数据容器要挂载moosefs的存储，所以，moosefs的client也是必须有的。当然，还要挂载好moosefs。最后，在controller里面，要设置好容器的ip和名字的对应关系，方便查找。基本流程就是。</p>
+
+<p>新的用户来了，查找是否已经存在这个用户，如果应经存在，就说明已经弄好了，不用再考虑，如果没有，那么，首先要启动一个容器，这个容器的image里面必须已经设置好了controller的key，然后，controller里面获得这个容器的ip，配置好域名和ip的对应关系。而在那个容器里面，要挂载moosefs的存储，其基本思路是，在moosefs master里面export的根目录下，新建一个文件夹，名字就是新的用户名，然后，挂载到这个对应用户名的目录下。这里面就需要做的一件事情就是要修改moosefs master里面的export的目录，和重启moosefs master服务。</p>
+
+<p>这个还没有实现，等我测试好了逻辑控制层和操作系统层的分离，就开始写这个东西。</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jul 29th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
+
+
+</div>
+	
+</div>
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		
+	</div>
+	
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2015
+
+    monkey-H
+
+<p>
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<span id="busuanzi_container_site_uv">
+    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+</p>
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+
+
+</body>
+</html>

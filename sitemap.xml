@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://monkey-h.github.io/blog/my-paas-13/</loc>
+    <loc>http://monkey-h.github.io/blog/my-paas-14/</loc>
     <lastmod>2015-07-29T07:50:36+08:00</lastmod>
   </url>
   <url>
@@ -120,11 +120,5 @@
   </url>
   <url>
     <loc>http://monkey-h.github.io/blog/categories/napping-tai/</loc>
-  </url>
-  <url>
-    <loc>http://monkey-h.github.io/posts/2/</loc>
-  </url>
-  <url>
-    <loc>http://monkey-h.github.io/posts/3/</loc>
   </url>
 </urlset>

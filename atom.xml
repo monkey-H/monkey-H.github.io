@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-07-29T10:00:21+08:00</updated>
+  <updated>2015-07-29T10:05:55+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[设计自己的paas平台nap 14----新用户策略]]></title>
-    <link href="http://monkey-h.github.io/blog/my-paas-13/"/>
+    <link href="http://monkey-h.github.io/blog/my-paas-14/"/>
     <updated>2015-07-29T07:50:36+08:00</updated>
-    <id>http://monkey-h.github.io/blog/my-paas-13</id>
+    <id>http://monkey-h.github.io/blog/my-paas-14</id>
     <content type="html"><![CDATA[<h3>写在前面</h3>
 
 <p>我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待，使得让每个用户都觉得，他们是在独占使用nap平台的。</p>

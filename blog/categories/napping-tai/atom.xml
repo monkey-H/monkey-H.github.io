@@ -4,7 +4,7 @@
   <title><![CDATA[分类：nap平台 | Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/blog/categories/napping-tai/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-07-29T10:00:21+08:00</updated>
+  <updated>2015-07-29T10:05:55+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[设计自己的paas平台nap 14----新用户策略]]></title>
-    <link href="http://monkey-h.github.io/blog/my-paas-13/"/>
+    <link href="http://monkey-h.github.io/blog/my-paas-14/"/>
     <updated>2015-07-29T07:50:36+08:00</updated>
-    <id>http://monkey-h.github.io/blog/my-paas-13</id>
+    <id>http://monkey-h.github.io/blog/my-paas-14</id>
     <content type="html"><![CDATA[<h3>写在前面</h3>
 
 <p>我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待，使得让每个用户都觉得，他们是在独占使用nap平台的。</p>
@@ -37,6 +37,225 @@
 <p>新的用户来了，查找是否已经存在这个用户，如果应经存在，就说明已经弄好了，不用再考虑，如果没有，那么，首先要启动一个容器，这个容器的image里面必须已经设置好了controller的key，然后，controller里面获得这个容器的ip，配置好域名和ip的对应关系。而在那个容器里面，要挂载moosefs的存储，其基本思路是，在moosefs master里面export的根目录下，新建一个文件夹，名字就是新的用户名，然后，挂载到这个对应用户名的目录下。这里面就需要做的一件事情就是要修改moosefs master里面的export的目录，和重启moosefs master服务。</p>
 
 <p>这个还没有实现，等我测试好了逻辑控制层和操作系统层的分离，就开始写这个东西。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台nap 13----代码拆分]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-13/"/>
+    <updated>2015-07-28T07:38:22+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-13</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>我们前面已经做了很多事情，对基本的流程也有了一定的了解，那么现在我们可以做一些完善工作了，虽然这个完善工作的工作量也是巨大的。为了实现平台无关性，我们要想办法把控制逻辑部分，从操作系统层次剥离开来，把控制逻辑部分也在一个容器中实现。为了实现用户的个性化定制，我们需要区别对待不同的用户，把数据层隔离出来。为了实现用户的资源控制和数据信息的集中展示，我们需要数据库部分。等等。</p>
+
+<!--more-->
+
+
+<h3>nap结构再思考</h3>
+
+<p>从前面的分析中，我觉得，我们新的nap平台的设计应该是这样的。</p>
+
+<p><img src="../../images/nap+architecture.png" alt="" /></p>
+
+<p>拆开来说，应该有以下几个部分。</p>
+
+<p>deploy部分。</p>
+
+<p><img src="../../images/nap+deploy.png" alt="" /></p>
+
+<p>run部分</p>
+
+<p><img src="../../images/nap+run.png" alt="" /></p>
+
+<p>新用户部分</p>
+
+<p><img src="../../images/nap+new+user.png" alt="" /></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台nap 12----数据库服务设计]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-12/"/>
+    <updated>2015-07-22T09:37:43+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-12</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>如果每次获取用户的部署的应用的信息，都需要使用fleet提供的接口进行一定的计算，甚至需要使用一些不友好的方式，比如使用ls来查看有多少个目录，就认为有多少个应用等方式的话，这样是非常的不美观的。我们需要增加一个数据库的组件，用来存储相应的信息，每次需要的时候，就从这里面读取，这样才是正统的设计方式。我们采用mysql来实现数据库服务。</p>
+
+<!--more-->
+
+
+<h3>数据库服务设计</h3>
+
+<p>首先，我们存储了两张表格。一张用来存储service，另外一张用来存储app。名字就用这两个单词来命名。那么，我们都需要存储哪些信息呢？
+对于service而言，我们需要知道这个service的名字，种类（mpi，mapreduce，profile等），如果是mpi或者mapreduce，还需要知道slave节点的个数。service的url，可以调节的参数，和已经部署运行的实例的个数，最后，我们要知道这个service是属于哪一个用户的，这个也很重要。
+对于app而言，我们要知道这个app的名字，ip，port（对外界暴露的端口），boxport(使用shellinabox技术，需要知道暴露的端口)，启动命令（这个对以后启动应用很有用），最后就是这个app属于哪一个service。</p>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;"> name </th>
+<th style="text-align:center;"> kind </th>
+<th style="text-align:center;"> slave_num </th>
+<th style="text-align:center;"> url </th>
+<th style="text-align:center;"> parameters </th>
+<th style="text-align:center;"> instance_num </th>
+<th style="text-align:center;"> fathername </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">monkey_dockerfile</td>
+<td style="text-align:center;">dockerfile</td>
+<td style="text-align:center;">0</td>
+<td style="text-align:center;">github.com</td>
+<td style="text-align:center;">arg1#arg2</td>
+<td style="text-align:center;">0</td>
+<td style="text-align:center;">monkey</td>
+</tr>
+</tbody>
+</table>
+
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center;"> name </th>
+<th style="text-align:center;"> ip </th>
+<th style="text-align:center;"> boxport </th>
+<th style="text-align:center;"> port </th>
+<th style="text-align:center;"> command </th>
+<th style="text-align:center;"> fathername </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">monkey_dockerfile_1</td>
+<td style="text-align:center;">114.212.189.140</td>
+<td style="text-align:center;">14596</td>
+<td style="text-align:center;">14594#14595</td>
+<td style="text-align:center;">python start.py</td>
+<td style="text-align:center;">monkey_dockerfile</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>当然，有了这些还不够，我们还需要有对应于数据库的一些操作的封装和实现。文件命名为mysql_treat。</p>
+
+<p>刚开始，我们的思路是这样的，我们包含了以下一些基本的操作，实现对数据的每个部分的读取和设置。
+注意，servicename,appname包含了username</p>
+
+<ul>
+<li>get_servicename_list(username) 返回用户服务列表</li>
+<li>get_kind(servicename)返回服务的种类</li>
+<li>set_kind(servicename, value)</li>
+<li>get_slave_num(servicename)</li>
+<li>get_url(servicename)</li>
+<li>get_parameters(servicename)</li>
+<li><p>get_instance_num(servicename)</p></li>
+<li><p>get_appname_list(servicename)</p></li>
+<li>get_port(appname)</li>
+<li>get_ip(appname)</li>
+<li>get_command(app_name)</li>
+</ul>
+
+
+<p>但是，后来我们发现，这些函数完全没必要命名的这么奇怪，这样会让编程人员记忆起来非常麻烦，我们可以只实现三个函数，但是这三个函数可以实现上面所有的功能。
+- set_value(table, column, value, servicename_or_appname)
+- get_value(table, column, servicename_or_appname)
+- get_list(table, username_or_servicename)</p>
+
+<p>还是编程经验少，如果多了，应该一开始就想到这种设计方法。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台nap 11----mapreduce应用]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-11/"/>
+    <updated>2015-06-17T10:11:07+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-11</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>在前面的文章中，我们已经对mpi应用，maven工程应用做了一些介绍，那么转接到先部署，再启动的模式中，也只要对其有些修改即可，总体的设计理念是没有变化的。但是，我们现在要介绍的这个mapreduce应用却不是这样。mapreduce应用和mpi应用都属于多个容器支撑的应用，但是，mapreduce和mpi最大的不同是，mpi应用，只需要master节点知道所有的slave节点的ip地址即可。但是，mapreduce需要所有的节点，都知道其他节点的ip地址信息，这是一个很大的难点，我们接下来会详细叙述。</p>
+
+<!--more-->
+
+
+<h3>nap平台mapreduce应用设计分析</h3>
+
+<p>在我看来，mapreduce应用的支撑设计，应该包括四个阶段。
+- 跑起来masters,slaves
+- 获取到这些masters，slaves的ip地址。
+- 把这些ip地址都写入到masters和slaves中去。
+- 让masters跑要跑的命令。</p>
+
+<p>接下来，我们一条一条的说。</p>
+
+<h4>启动masters和slaves</h4>
+
+<p>这一条和之前设计的启动mpi的master和slave是一样的。通过一个unit启动master和slave，然后通过discovery来发现启动的容器的端口号等信息，并且写入到etcd中去，为下一步做打算。</p>
+
+<h4>获取ip信息</h4>
+
+<p>这一条也比较简单，前面已经把这些容器的ip信息都写入到了etcd中，所以，只要去etcd中去读取，并且记录下来就可以了。</p>
+
+<h4>写入ip信息到master，slave中</h4>
+
+<p>这一步其实是很有难点的。我们如何把这些ip信息写入到已经跑起来的容器中呢？虽然fleetctl ssh可以进入到一个容器中，但是，在bash命令中，那相当于重启了一个终端，如何把在这个终端中写入东西？我是一个bash新手，不会。但是我在想，是不是有一种重定向的设定，可以在里面写入命令。我之后会尝试查找这方面的内容，但是现在，我想到了另一种，虽然比较麻烦，但是感觉更加正确的方法。我用一个可以无密码登陆到master和slave的容器，这个容器就干一件事，把master和slave节点信息文件，scp到master和slave节点上去。</p>
+
+<h4>让masters跑命令</h4>
+
+<p>这也是一个难点。我们都知道docker logs只能输出第一线程的日志，我们这里跑起来master，slave的时候，已经不是第一线程了，所以，我们这里已经失去了一个最简单的获取日志的方式，但是我突然想到fleetctl journal和fleetctl cat的不同，好像这个可以解决。继续回到如何让master跑命令的问题，像上一个问题一样，我们不可能用docker exec -ti container /bin/bash这样，进去去执行，但是，我也希望通过上面的方法来解决这个问题。用一个可以无密码登陆到master节点上的container，这个container通过ssh的方式，使master运行需要运行的命令。</p>
+
+<h4>总结</h4>
+
+<p>好了，该说的都说了，继续实践。如果有问题，这里会继续补充。代码部分在github.com/monkey-h/nap</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的pass平台nap 10----统一接口规范]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-10/"/>
+    <updated>2015-06-15T21:18:17+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-10</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>继续探讨一些统一接口，列出统一接口的名称，使用方法，和每个接口的功能。并通过大体流程的描述，详细叙述每个接口的功能。并把这篇文章最为web manager管理界面开发的时候参考的主要接口文档。</p>
+
+<!--more-->
+
+
+<h3>nap统一接口</h3>
+
+<p>统一接口的一部分，想到其余的，再补。（注意这里的service和app是等同的，nap中跑的应用的命名规范为username_appname_mpi_master.service或者username_appname_mpi_slave@%i.service或者username_appname_common@%i.service）
+<code>
+- deploy_app(username_servicename, url): 上传应用，并不部署
+- list_services(username) 列出已经上传的应用
+- get_service_url(username, servicename) 得到部署的应用的url，这个url我们希望通过etcd来存储。存储的位置暂定为/services/url/username/appname
+- get_instances_num(username_service_name) 获得某个上传的应用的实例个数。
+- list_instances(username_servicename) 列出相同unit的不同应用，通过用户名和app名字进行匹配。
+- get_port(instancename) 获得跑起来的实例的端口号，通过etcd来设置。存放在/services/port/username/appname
+- get_journal(instancename) 获得某一个实例的运行日志。
+- stop_app(instancename) 停止某一个instance
+- start_app(instancename) 开始一个刚刚开始的应用
+- cat_app(instancename) 获得某一个instance的启动命令。
+- get_parameters(username_servicename) 获得某一个应用的可调参数列表。
+- start_common(username_servicename, para_str) 启动一个普通的应用。
+- start_mpi(username_servicename, para_str) 启动一个mpi应用。
+</code></p>
+
+<h3>接口进一步解释。</h3>
+
+<p>从deploy开始。用户选择上传一个应用。deploy_app username_appname url，这个时候，服务器端，就是到/home/nap/services/username/username_appname路径下，下载对应url下的应用程序。那么list_services username，就是到这个路径下，有多少个文件夹就显示出来。同时，在deploy_app的时候，也在etcd的/services/url/username/appname路径下，存储url的值，为get_service_url做准备。接下来是start_common username_appname para_str这个命令，显然，在执行这个命令之前，要先执行get_parameters username_servicename，这个命令的作用是去读取用户程序文件夹下profile文件中的被{}包含的单词，我们认为这个单词是可以重新设定的可变参数，返回{}包含的单词，按逗号隔开的一个字符串，比如para1,para2。然后，用户需要填写这些参数对应的值，调用start_common函数，就可以部署一个应用。部署的过程就是，把/home/nap/services/username/username_servicename路径下的应用程序，拷贝到/home/nap/apps/username/username_servicename_num下，把可变参数用得到的参数列表替换，并且，注意命名，有个num，意思是这个文件夹下已经有的文件个数+1，这样可以避免重名。拷贝好，替换好之后呢，就可以start了，具体的start一个用例，我们在前面已经介绍的很清楚了，这里就不再介绍了。</p>
+
+<p>当start好一个实例之后。用户调用get_instances_num service_name就可以获得service对应的instance有多少个，具体实现就是利用fleetctl list-units中所有的结果，和&lt;service_name_来进行匹配，有多少个，就输出多少。当然，list_instances也就解决了，用同样的方法。</p>
+
+<p>还有cat_app 这个命名我们把他重构了，不再是fleet中的cat的作用了，我们现在把他定义为获得这个应用的profile文件。直接到对应的文件夹下去读就可以了。
+get_port这个命令，是在start_common的时候，把这个程序的端口号，写到etcd的/services/port/username/appname这里，然后调用这个命令的时候，使用etcdctl get命令来做。</p>
+
+<p>至于start_app stop_app get_journal这些命令，直接调用fleet的命令就可以了。</p>
 ]]></content>
   </entry>
   
