@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 我们之后可能会遇到这个问题。部署成功了一个web应用，我们需要给这个应用注册一个web地址，并且返回给用户，那么，如何得到这个应用的ip地址，端口号等信息呢？在fleet的机制中，有个discovery机制，这个机制就很好的完成了这个工作，其主要工作原理就是，运行一个discovery &hellip;">
+	<meta name="description" content="写在前面 nap在对应用进行部署时，应该有一个判断机制，如果这个应用已经是最新的了，那么我们就直接返回最新的结果就可以了，不需要重新部署。而且我们的nap到现在为止，都是只完成了对Dockerfile应用的简单支持，简单一些，我们可以实现maven应用的支持。下面，我们就上面两个问题， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,39 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-5/">
+		
+			设计自己的paas平台nap 5&#8212;-maven规范和自发现服务</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>nap在对应用进行部署时，应该有一个判断机制，如果这个应用已经是最新的了，那么我们就直接返回最新的结果就可以了，不需要重新部署。而且我们的nap到现在为止，都是只完成了对Dockerfile应用的简单支持，简单一些，我们可以实现maven应用的支持。下面，我们就上面两个问题，进行简单介绍。</p>
+
+
+		
+		<a href="/blog/my-paas-5/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jun 3rd, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -356,39 +389,6 @@ May 6th, 2015</div>
 
 		
 		<a href="/blog/mpi-benchmark/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 6th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/">
-		
-			使用vagrant搭建coreos集群安装flannel服务并使用mpi测试</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>容器技术已经成为了当前技术的潮流，学习容器技术已经刻不容缓。除了原始的warden容器，docker容器之外，coreos也在发展自己的容器技术，rocket，就连之前不看好容器技术的microsoft也开始创建自己的容器技术，nano server。我们这里尝试搭建coreos集群，并安装了flannel服务，用来实现mpi程序的测试。</p>
-
-
-		
-		<a href="/blog/shi-yong-vagrantda-jian-coreosji-qun-an-zhuang-flannelfu-wu-bing-shi-yong-mpi-benchmarkce-shi/" class="more-link">继续阅读;</a>
 	</div>
 
 

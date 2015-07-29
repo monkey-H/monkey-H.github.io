@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[分类：nap平台 | Welcome to monkey-H's blog]]></title>
+  <link href="http://monkey-h.github.io/blog/categories/napping-tai/atom.xml" rel="self"/>
+  <link href="http://monkey-h.github.io/"/>
+  <updated>2015-07-29T10:00:21+08:00</updated>
+  <id>http://monkey-h.github.io/</id>
+  <author>
+    <name><![CDATA[monkey-H]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[设计自己的paas平台nap 14----新用户策略]]></title>
+    <link href="http://monkey-h.github.io/blog/my-paas-13/"/>
+    <updated>2015-07-29T07:50:36+08:00</updated>
+    <id>http://monkey-h.github.io/blog/my-paas-13</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待，使得让每个用户都觉得，他们是在独占使用nap平台的。</p>
+
+<!--more-->
+
+
+<h3>新用户策略</h3>
+
+<p><img src="../../images/nap+architecture.png" alt="" /></p>
+
+<p>在这里的时候，我们可以看到，对于不同的用户，我们应该有不同的数据存储区域。我们现在的做法是，在147这台机器上，不仅有用于存储的moosefs部分，还有总的逻辑控制部分controller，用来存储信息的database数据库部分，运行的应用容器部分，最后，还有针对不同的用户的数据存储部分。
+针对每一个不同的用户，我们都有一个专门的容器，用来存储这个用户的所有数据文件，对于不同的用户，是不能互相访问的。而这个用户所有跑起来的应用容器，也应该直接挂载这个容器，从而所有的数据在所有的属于这个用户的容器中，应该都是可以看到的。这是我们的目的。同时，我们的前台有一个关于用户数据的部分，我们也希望直接通过这个数据容器，直接返回用户。</p>
+
+<p>知道了为什么我们要有这个东西，接下来的问题就是，怎么设计这个东西。首先，由于controller要ssh到数据容器里面做事情，所以，ssh key是必须设置好，可以无密码访问的。其次，数据容器要挂载moosefs的存储，所以，moosefs的client也是必须有的。当然，还要挂载好moosefs。最后，在controller里面，要设置好容器的ip和名字的对应关系，方便查找。基本流程就是。</p>
+
+<p>新的用户来了，查找是否已经存在这个用户，如果应经存在，就说明已经弄好了，不用再考虑，如果没有，那么，首先要启动一个容器，这个容器的image里面必须已经设置好了controller的key，然后，controller里面获得这个容器的ip，配置好域名和ip的对应关系。而在那个容器里面，要挂载moosefs的存储，其基本思路是，在moosefs master里面export的根目录下，新建一个文件夹，名字就是新的用户名，然后，挂载到这个对应用户名的目录下。这里面就需要做的一件事情就是要修改moosefs master里面的export的目录，和重启moosefs master服务。</p>
+
+<p>这个还没有实现，等我测试好了逻辑控制层和操作系统层的分离，就开始写这个东西。</p>
+]]></content>
+  </entry>
+  
+</feed>

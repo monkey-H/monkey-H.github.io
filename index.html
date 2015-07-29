@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 我们前面已经做了很多事情，对基本的流程也有了一定的了解，那么现在我们可以做一些完善工作了，虽然这个完善工作的工作量也是巨大的。为了实现平台无关性，我们要想办法把控制逻辑部分，从操作系统层次剥离开来，把控制逻辑部分也在一个容器中实现。为了实现用户的个性化定制，我们需要区别对待不同的用户， &hellip;">
+	<meta name="description" content="写在前面 我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,43 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-13/">
+		
+			设计自己的paas平台nap 14&#8212;-新用户策略</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>我们的paas平台并不是任何人都可以使用，我们希望加入用户验证的功能，只有通过用户验证的用户，才可以使用nap。我们现在想做的是，用户验证部分在前台就做好，后台认为所有可以进来的用户，都是可以直接使用paas平台的。那么，在后台中，我们就要针对不同的用户，有一定的区别对待，使得让每个用户都觉得，他们是在独占使用nap平台的。</p>
+
+
+		
+		<a href="/blog/my-paas-13/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jul 29th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
+
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -365,39 +402,6 @@ Jun 9th, 2015</div>
 
 
 Jun 8th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/my-paas-5/">
-		
-			设计自己的paas平台nap 5&#8212;-maven规范和自发现服务</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>nap在对应用进行部署时，应该有一个判断机制，如果这个应用已经是最新的了，那么我们就直接返回最新的结果就可以了，不需要重新部署。而且我们的nap到现在为止，都是只完成了对Dockerfile应用的简单支持，简单一些，我们可以实现maven应用的支持。下面，我们就上面两个问题，进行简单介绍。</p>
-
-
-		
-		<a href="/blog/my-paas-5/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Jun 3rd, 2015</div>
 	<div class="tags">
 
 </div>
