@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 nap在对应用进行部署时，应该有一个判断机制，如果这个应用已经是最新的了，那么我们就直接返回最新的结果就可以了，不需要重新部署。而且我们的nap到现在为止，都是只完成了对Dockerfile应用的简单支持，简单一些，我们可以实现maven应用的支持。下面，我们就上面两个问题， &hellip;">
+	<meta name="description" content="写在前面 前面一片文章说了关于配置多个实例的问题，其实我们应该更加深入的理解一下。很容易混淆的一个问题就是单应用多实例和一组类似应用的区别。而且，他们实现起来也是有很大差别的。下面我们对这个两个问题进行分别探讨，并分别实现，完成nap的更多功能。 继续阅读; Jun 9th, 2015 &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,80 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-7/">
+		
+			设计自己的paas平台nap 7&#8212;-单应用多实例</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>前面一片文章说了关于配置多个实例的问题，其实我们应该更加深入的理解一下。很容易混淆的一个问题就是单应用多实例和一组类似应用的区别。而且，他们实现起来也是有很大差别的。下面我们对这个两个问题进行分别探讨，并分别实现，完成nap的更多功能。</p>
+
+
+		
+		<a href="/blog/my-paas-7/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jun 9th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
+
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-6/">
+		
+			设计自己的paas平台nap 6&#8212;-配置应用设置参数</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>很多时候，我们需要对应用进行一些配置信息。比如，需要的内存是多少，需要几个cpu来运行它，甚至要启动几个实例等。这些也是一个完整的paas平台所需要具备的功能。当然，nap也需要这个功能。</p>
+
+
+		
+		<a href="/blog/my-paas-6/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jun 8th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
+
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -343,72 +417,6 @@ May 7th, 2015</div>
 
 		
 		<a href="/blog/flannel-registry/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 6th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/ssh-image/">
-		
-			创建不需要输入密码就可以登录的docker Image</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。</p>
-
-
-		
-		<a href="/blog/ssh-image/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 6th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/mpi-benchmark/">
-		
-			使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>docker技术已经十分普遍，利用docker来创建多个虚拟机，实现分布式运算也是一种十分便利的方式，但是docker创建的虚拟机和常规的虚拟机，或者和分布式的集群到底有多少性能的差距，docker能不能通过创建多个container的方式实现常规的分布式运算，我们这里使用openmpi的一个benchmark，mtt来做一个验证。</p>
-
-
-		
-		<a href="/blog/mpi-benchmark/" class="more-link">继续阅读;</a>
 	</div>
 
 

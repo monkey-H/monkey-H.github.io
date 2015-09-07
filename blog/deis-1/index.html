@@ -1,0 +1,204 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>deis源码解读-go语言学习1 - Welcome to monkey-H&#8217;s blog</title>
+	<meta name="author" content="monkey-H">
+
+	
+	<meta name="description" content="写在前面 又开始看代码了，NAP的编程进入了细节化阶段，不能再闭门造车了，看看deis的代码，看看别人是怎么做的。首先，要学习一下go语言是怎么用的。 go语言 函数变量循环判断语句 go语言和一般的java程序一样，都需要一个main函数，作为程序的入口。func main(){} &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="https://www.google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:monkey-h.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="https://www.google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:monkey-h.github.io">
+	</form>
+</nav>
+
+</header>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Deis源码解读-go语言学习1</h2>
+	<div class="entry-content"><h4>写在前面</h4>
+
+<p>又开始看代码了，NAP的编程进入了细节化阶段，不能再闭门造车了，看看deis的代码，看看别人是怎么做的。首先，要学习一下go语言是怎么用的。</p>
+
+<!--more-->
+
+
+<h4>go语言 函数变量循环判断语句</h4>
+
+<ul>
+<li>go语言和一般的java程序一样，都需要一个main函数，作为程序的入口。func main(){}</li>
+<li><p>go语言也是可以引入别的现成的程序库和写好的程序。打包的方式：
+  import (
+  &ldquo;fmt&rdquo;
+  &ldquo;math&rdquo;
+)
+或者
+import &ldquo;fmt&rdquo;
+import &ldquo;math&rdquo;</p></li>
+<li><p>导入包之后，可以通过包加名称导出。在go语言中，导出的函数或者变量必须是大写的字母开头。比如在上面中，打印math中的pi。fmt.Println(math.pi)是不行的。当然，这是因为系统封装的math中没有pi，但是，就算是自己写的类，其中定义了pi，也是不能调用的，必须把pi改成Pi，大写字母开头才可以。</p></li>
+<li>定义函数。func add(x int, y int) int { return x+y } 学到的东西，没有分号，定义函数通过func 函数名 然后参数可以多个，也可以没有，先写变量，然后类型，逗号，继续。返回值类型在最后。</li>
+<li>当函数的参数同一个类型时，除了最后一个，都可以省略。func add(x, y int) int {}</li>
+<li><p>func swap(x, y string) (string, string) {
+  return y, x
+  }
+  func main() {
+  a,b := swap(&ldquo;hello&rdquo;, &ldquo;world&rdquo;)
+  fmt.Println(a, b)
+  }
+  从这里可以学到，多个返回值，用（）阔起来。=:后面在介绍。有多个返回值的时候，a,b即可。</p></li>
+<li><p>函数返回值可以直接被命名。
+  func split(sum int) (x, y int){
+  x = sum /2
+  y = sum *2
+  }
+  func main(){
+  fmt.Println(split(18))
+  }</p></li>
+<li><p>var语句可以定义变量列表，同样的，类型定义在后面。
+  var c, java bool
+  int i
+  注意，初始化，bool类型是false，int类型是0</p></li>
+<li>var语句定义的变量也可以初始化，var i,j int = 1,2</li>
+<li>:=用在一些变量类型明确的地方，可以用来替代var。比如，函数的返回值，已经生命了类型。或者变量声明的时候，初始化了true，string类型，这就很明显了。</li>
+<li>基本类型：bool，string，int，int8，int16，int32，int64，uint，uint8，uint16，uint32，uint64，uintptr，byte（uint8的别称），rune（int32的别名），float32，float64，complex64，complex128</li>
+<li><p>func main(){
+  const f = &ldquo;%T(%v)\n&rdquo;
+  fmt.Printf(f, x, x)
+}
+猜测这个的意思是打印x的变量类型（x的值）回车。</p></li>
+<li><p>零值，对于int类型是0，对于string类型是空字符串，对于布尔类型，是false。</p></li>
+<li>fmt.Printf(&ldquo;%q \n&rdquo;, s) fmt.Printf(&ldquo;%v \n&rdquo;, s)发现，如果s是string类型的，那么q输出有”“双引号，v没有。</li>
+<li>go语言不通类型之间的类型转换，需要显示转换。var f float64 = float(s)</li>
+<li>常量定义。const PI = 3.14不能用:=来定义。</li>
+<li>定义常量也可以像import一样打包。const(big=1 small=2)</li>
+<li>go只有一种循环，for循环，除了没有for后面的（），和java，c++的for循环是一样的,但是{}必须。</li>
+<li>虽然go语言只有一种循环，但是for循环可以没有前置语句和后置语句，当没有这两个的时候，又可以省略分好，所以，这个时候的go语言的for语句，实际就是java中的while语句。</li>
+<li>接上条，如果再省略判断语句，就是死循环了。类似于这种for{}这种。</li>
+<li>同样的，if语句也是，没有（），其余的和java一样，但{}必须。但是不同的是，if语句可以在判断语句之前，加一个简单的语句，用分号隔开，比如：if var i int = 2; v&lt;2 {}.</li>
+<li>switch语句也是这样，可以在前面加一个简单的语句，然后用分号隔开。不需要break语句，除非分支用fallthrough结束，否则分支会自动停止。</li>
+<li>switch语句没有选择项的时候，就是相当于switch true，这样的话，可以在case语句里面加上判断，比如case x > 2: 这样也是可以的，相当于if else语句。</li>
+<li>defer 语句会延迟函数的执行直到上层函数返回。</li>
+<li>延迟的defer函数调用被压入一个栈中。当函数返回时， 会按照后进先出的顺序调用被延迟的函数调用。</li>
+</ul>
+
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Sep 7th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
+
+</div>
+	
+</div>
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		
+	</div>
+	
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2015
+
+    monkey-H
+
+<p>
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<span id="busuanzi_container_site_uv">
+    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+</p>
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+
+
+</body>
+</html>

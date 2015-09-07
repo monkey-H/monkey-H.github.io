@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[分类：deis源码解读 | Welcome to monkey-H's blog]]></title>
+  <link href="http://monkey-h.github.io/blog/categories/deisyuan-ma-jie-du/atom.xml" rel="self"/>
+  <link href="http://monkey-h.github.io/"/>
+  <updated>2015-09-07T19:11:07+08:00</updated>
+  <id>http://monkey-h.github.io/</id>
+  <author>
+    <name><![CDATA[monkey-H]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[deis源码解读-go语言学习2]]></title>
+    <link href="http://monkey-h.github.io/blog/deis-2/"/>
+    <updated>2015-09-07T14:32:41+08:00</updated>
+    <id>http://monkey-h.github.io/blog/deis-2</id>
+    <content type="html"><![CDATA[<h4>写在前面</h4>
+
+<p>又开始看代码了，NAP的编程进入了细节化阶段，不能再闭门造车了，看看deis的代码，看看别人是怎么做的。首先，要学习一下go语言是怎么用的。</p>
+
+<!--more-->
+
+
+<h4>go语言 复杂类型 方法 接口</h4>
+
+<ul>
+<li>go语言中也存在指针类型，其声明方式是p := &amp;i 或者 var p *int这样，注意，go语言中没有指针运算。</li>
+<li>结构体就是一个字段的集合。
+type Vertex struct {
+  X int
+  Y int
+}</li>
+</ul>
+
+
+<p>func main() {
+    fmt.Println(Vertex{1, 2})
+    v := Vertex{1,2}
+    v.X = 4
+    p := &amp;v
+    p.Y = 3
+}
+打印出来的是{1 2}
++ 结构体初始化的时候，可以通过{X:1, Y:2}这种方式初始化，如果省略了其中一个，比如Y，就是初始化的零值。
++ 数组 var a [2]string a[0]
++ 切片slice。s := []int{2,3,4,5} 可以通过这种方式访问，s[1:3], s[:3] s[2:]注意，s[a:b]是从a开始，到b-1结束。
++ slice除了以上面的方式构建，还可以通过make函数构建。a := make([]int, 5)，这个5就是slice的len。slice有两个函数要注意，一是len，一是cap。len(x) cap(x)，len是长度，cap是能够装的个数。make([]int ,0,5)第一个就是len，后一个就是cap。slice定义的时候可以不定义大小，通过append来增加输入。当超过cap的时候，会自动增加大小。
+var a []int
+a = append(a,1)
+a = append(a, 2,3,4)
++ 通过for循环的range格式对slice循环。
+func main(){
+var pow = []int{1,2,3,4,5}
+for i,v := range pow{
+fmt.Printf(&ldquo;%d: %d \n&rdquo;, i,v)
+}
+}
+这里的i，v就是小标和数字。
++ 如果用不到i，就用<em>来代替。for </em>, value := range pow
++ map和java的hashmap很像。
+type Vertex struct{
+Lat,Long float64
+}
+var m map [string] Vertex
+m = make(map[string]Vertex)
+m[&ldquo;hello&rdquo;] = Vertext{
+1.3,2.9
+}
+注意，map在使用之前，必须用make来创建。没有make的map是空的，值为nil，并且不能赋值。
++ 另一种初始化方式。
+var m = map[string]Vertex{
+&ldquo;hello&rdquo;: Vertex{
+1,2
+},
+&ldquo;world&rdquo;:Vertex{
+3,4
+},
+}
++ m := make(map[string]int)
+m[&ldquo;hello&rdquo;]=42
+delete(m, &ldquo;hello&rdquo;)
+v, ok := m[&ldquo;hello&rdquo;]判断有没有返回值。如果map中读取某个不存在的键时，结果是map元素类型的零值。
++ go语言中没有类的概念，但是可以在结构体类型上定义方法。比如
+type MyFloat float64
+func (f MyFloat) Abs() float64{
+if f&lt;0 {
+return float(-f)
+}
+return float64(f)
+}
+然后在后面就可以通过f.Abs()来调用。
++ 在结构体类型上定义方法的时候，注意，尽量用指针来做，用指针可以用来修改结构体变量的值，而不用指针的话，修改的只是一个拷贝，所以不会修改原来的值，是没有意义的。
++ go新开启一个线程。
++ channel是有类型的管道，默认情况下，在另一端没有准备好之前，接受都会阻塞，使得goroutine在没有明确的锁或者静态变量的情况下进行同步。不过channel和map和slice一样，都需要用make来创建一下才可以使用。c := make(chan int)后面的int代表之后要送进去的值。c &lt;- sum     x,y := &lt;-c,&lt;-c分别是加入一个值和推出一个值。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[deis源码解读-go语言学习1]]></title>
+    <link href="http://monkey-h.github.io/blog/deis-1/"/>
+    <updated>2015-09-07T10:25:54+08:00</updated>
+    <id>http://monkey-h.github.io/blog/deis-1</id>
+    <content type="html"><![CDATA[<h4>写在前面</h4>
+
+<p>又开始看代码了，NAP的编程进入了细节化阶段，不能再闭门造车了，看看deis的代码，看看别人是怎么做的。首先，要学习一下go语言是怎么用的。</p>
+
+<!--more-->
+
+
+<h4>go语言 函数变量循环判断语句</h4>
+
+<ul>
+<li>go语言和一般的java程序一样，都需要一个main函数，作为程序的入口。func main(){}</li>
+<li><p>go语言也是可以引入别的现成的程序库和写好的程序。打包的方式：
+  import (
+  &ldquo;fmt&rdquo;
+  &ldquo;math&rdquo;
+)
+或者
+import &ldquo;fmt&rdquo;
+import &ldquo;math&rdquo;</p></li>
+<li><p>导入包之后，可以通过包加名称导出。在go语言中，导出的函数或者变量必须是大写的字母开头。比如在上面中，打印math中的pi。fmt.Println(math.pi)是不行的。当然，这是因为系统封装的math中没有pi，但是，就算是自己写的类，其中定义了pi，也是不能调用的，必须把pi改成Pi，大写字母开头才可以。</p></li>
+<li>定义函数。func add(x int, y int) int { return x+y } 学到的东西，没有分号，定义函数通过func 函数名 然后参数可以多个，也可以没有，先写变量，然后类型，逗号，继续。返回值类型在最后。</li>
+<li>当函数的参数同一个类型时，除了最后一个，都可以省略。func add(x, y int) int {}</li>
+<li><p>func swap(x, y string) (string, string) {
+  return y, x
+  }
+  func main() {
+  a,b := swap(&ldquo;hello&rdquo;, &ldquo;world&rdquo;)
+  fmt.Println(a, b)
+  }
+  从这里可以学到，多个返回值，用（）阔起来。=:后面在介绍。有多个返回值的时候，a,b即可。</p></li>
+<li><p>函数返回值可以直接被命名。
+  func split(sum int) (x, y int){
+  x = sum /2
+  y = sum *2
+  }
+  func main(){
+  fmt.Println(split(18))
+  }</p></li>
+<li><p>var语句可以定义变量列表，同样的，类型定义在后面。
+  var c, java bool
+  int i
+  注意，初始化，bool类型是false，int类型是0</p></li>
+<li>var语句定义的变量也可以初始化，var i,j int = 1,2</li>
+<li>:=用在一些变量类型明确的地方，可以用来替代var。比如，函数的返回值，已经生命了类型。或者变量声明的时候，初始化了true，string类型，这就很明显了。</li>
+<li>基本类型：bool，string，int，int8，int16，int32，int64，uint，uint8，uint16，uint32，uint64，uintptr，byte（uint8的别称），rune（int32的别名），float32，float64，complex64，complex128</li>
+<li><p>func main(){
+  const f = &ldquo;%T(%v)\n&rdquo;
+  fmt.Printf(f, x, x)
+}
+猜测这个的意思是打印x的变量类型（x的值）回车。</p></li>
+<li><p>零值，对于int类型是0，对于string类型是空字符串，对于布尔类型，是false。</p></li>
+<li>fmt.Printf(&ldquo;%q \n&rdquo;, s) fmt.Printf(&ldquo;%v \n&rdquo;, s)发现，如果s是string类型的，那么q输出有”“双引号，v没有。</li>
+<li>go语言不通类型之间的类型转换，需要显示转换。var f float64 = float(s)</li>
+<li>常量定义。const PI = 3.14不能用:=来定义。</li>
+<li>定义常量也可以像import一样打包。const(big=1 small=2)</li>
+<li>go只有一种循环，for循环，除了没有for后面的（），和java，c++的for循环是一样的,但是{}必须。</li>
+<li>虽然go语言只有一种循环，但是for循环可以没有前置语句和后置语句，当没有这两个的时候，又可以省略分好，所以，这个时候的go语言的for语句，实际就是java中的while语句。</li>
+<li>接上条，如果再省略判断语句，就是死循环了。类似于这种for{}这种。</li>
+<li>同样的，if语句也是，没有（），其余的和java一样，但{}必须。但是不同的是，if语句可以在判断语句之前，加一个简单的语句，用分号隔开，比如：if var i int = 2; v&lt;2 {}.</li>
+<li>switch语句也是这样，可以在前面加一个简单的语句，然后用分号隔开。不需要break语句，除非分支用fallthrough结束，否则分支会自动停止。</li>
+<li>switch语句没有选择项的时候，就是相当于switch true，这样的话，可以在case语句里面加上判断，比如case x > 2: 这样也是可以的，相当于if else语句。</li>
+<li>defer 语句会延迟函数的执行直到上层函数返回。</li>
+<li>延迟的defer函数调用被压入一个栈中。当函数返回时， 会按照后进先出的顺序调用被延迟的函数调用。</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+</feed>

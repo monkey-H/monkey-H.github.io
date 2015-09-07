@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 容器技术已经成为了当前技术的潮流，学习容器技术已经刻不容缓。除了原始的warden容器，docker容器之外，coreos也在发展自己的容器技术，rocket，就连之前不看好容器技术的microsoft也开始创建自己的容器技术，nano server。我们这里尝试搭建coreos集群， &hellip;">
+	<meta name="description" content="写在前面 ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。 继续阅读; May 6th, &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,72 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/ssh-image/">
+		
+			创建不需要输入密码就可以登录的docker Image</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。</p>
+
+
+		
+		<a href="/blog/ssh-image/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/mpi-benchmark/">
+		
+			使用mtt作为mpi的benchmark 测试docker Container计算集群性能</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>docker技术已经十分普遍，利用docker来创建多个虚拟机，实现分布式运算也是一种十分便利的方式，但是docker创建的虚拟机和常规的虚拟机，或者和分布式的集群到底有多少性能的差距，docker能不能通过创建多个container的方式实现常规的分布式运算，我们这里使用openmpi的一个benchmark，mtt来做一个验证。</p>
+
+
+		
+		<a href="/blog/mpi-benchmark/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
