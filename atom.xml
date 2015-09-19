@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-09-07T20:01:12+08:00</updated>
+  <updated>2015-09-19T10:33:17+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -12,6 +12,269 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Deis源码解读-deis基本组件-builder]]></title>
+    <link href="http://monkey-h.github.io/blog/deis-4/"/>
+    <updated>2015-09-18T14:58:04+08:00</updated>
+    <id>http://monkey-h.github.io/blog/deis-4</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。</p>
+
+<!--more-->
+
+
+<h4>边读边学</h4>
+
+<p>多代码的时候要有耐心，不要想着一口吃个大胖子，一点一点来，不懂的地方就查，不要想着跳过。特别注意import方法里面引入的包，这个很重要。
+import os 像这些没有加网址的，都是go语言自带的一些标准库。os提供了一套和平台无关的接口，用来操作系统功能。和操作系统进行交互。
+import github.com/masterminds/cookoo go语言代码，一般都引入了大量的网上代码库，这就是其中一个。</p>
+
+<h4>cookoo</h4>
+
+<p>既然他引入了cookoo，我们就看看这个cookoo是个什么吊东西。
+直接进入那个github的网址。
+cookoo是一个开发框架。开发者经常把他当做一个中间件平台，这个平台可以给开发者足够的灵活性来开发应用，同时，handles the top-level structure for you.
+main.go</p>
+
+<p>package main</p>
+
+<p>import (
+    &ldquo;github.com/Masterminds/cookoo&rdquo;
+    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
+)</p>
+
+<p>func main() {
+    cli.New(cookoo.Cookoo()).Run(&ldquo;help&rdquo;)
+}</p>
+
+<p>可以看到，这里用cli.New()创建了一个新的cookoo app，这句话反悔了三个东西，registry（用来声明routes），router（用来执行route），context（用来给app传送数据等）</p>
+
+<p>运行是通过go run main.go -h这样来运行，或者go run main.go这样。这里的-h是-help的意思，这个route是cookoo默认就有的，不需要我们自己再去定义。</p>
+
+<p>func main() {
+    reg, router, cxt := cookoo.Cookoo()</p>
+
+<pre><code>reg.Route("hello", "A Hello World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Hello World!\n")
+
+cli.New(reg, router, cxt).Run("hello")
+</code></pre>
+
+<p>}
+这里就不用说了，重新定义了main函数。第一条命令就返回了上面说的那三个东西，第二行就是定义了一条新的route。
+一条route有一个名字和一个描述，接着跟着若干条命令。可以认为是一个task（hello），和一系列的步骤需要完成这个task。刚刚也说了在cookoo app中，router是用来跑task的，但是，用户一般不直接和router交互，而是通过runner来交互。
+在上面我们定义的route中，Route（）函数有两个参数，一个是route的名字，这个很重要，在后面对route的调用中，就是通过route的名字来调用。第二个参数就是一个对route的描述，这个是对开发者而言的，终端用户一般看不到。cookoo用这个东西来自动生成程序的文档。route最终都是要做事情的，所以，在route的后面，都会跟着若干Does，本例中route Does（fmt.Printf, &ldquo;<em>&#8220;）同样的，Does也有两个参数，一个是要跑的命令，另一个是输出的名字。这里的&rdquo;</em>&ldquo;的意思就是忽略这条命令的输出，这个不重要。fmt.Printf是cookoo的内嵌命令，直接调用了go的fmt.Printf。命令需要的参数，我们通过Using来输入，Using通过键值对的方式，把数据传输到Does command中的函数中去。
+那么，跑这调route的方式就是cli.New(reg, router, cxt).Run(&#8220;hello&rdquo;)，然后如果我们go run main.go，就会出现Hello World!的输出。
+package main</p>
+
+<p>import (
+    &ldquo;github.com/Masterminds/cookoo&rdquo;
+    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
+    &ldquo;github.com/Masterminds/cookoo/fmt&rdquo;</p>
+
+<pre><code>"flag"
+</code></pre>
+
+<p>)</p>
+
+<p>const (
+    Summary = &ldquo;A Hello World program&rdquo;
+    Description = <code>This program writes Hello World to standard output.
+With the -a flag, the second word can be replaced by an artitary string.
+</code>
+)</p>
+
+<p>func main() {
+    reg, router, cxt := cookoo.Cookoo()</p>
+
+<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
+flags.Bool("h", false, "Show help text")
+flags.String("a", "World", "A string to place after 'Hello'")
+
+reg.Route("hello", "A Hello World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Hello %s!\n").
+    Using("0").From("cxt:a")
+
+cli.New(reg, router, cxt).Help(Summary, Description, flags).Run("hello")
+</code></pre>
+
+<p>}
+const用来定义常量，summary一般较短，description一般较长。
+flag也是很重要的一个部分。cookoo用的GO语言内置的flag包来支持commandline flag。在上面的例子中，我们声明了两种flag。一个是-h，如果我们想override 默认的flag，这个是必须的。第二个是-a，这个flag允许我们从command line传送一个sring到程序中。
+那么运行起来是什么样子的呢？
+go run main.go
+Hello World!</p>
+
+<p>go run main.go -h</p>
+
+<h1>SUMMARY</h1>
+
+<p>A Hello World program</p>
+
+<h1>USAGE</h1>
+
+<p>This program writes Hello World to standard output.</p>
+
+<p>With the -a flag, the second word can be replaced by an artitary string.</p>
+
+<h1>FLAGS</h1>
+
+<pre><code>-a: A string to place after 'Hello' (Default: 'World')
+-h: Show help text (Default: 'false')
+</code></pre>
+
+<p>go run main.go -a You
+Hello You!</p>
+
+<p>我们再看route的定义。Does有了两个参数，第一个是format，第二个是0，这个0的意思是把第一个参数传给format string。类似于fmt.Printf(format, cxt.Get(&ldquo;a&rdquo;, &ldquo;&rdquo;).(string))那么，cxt的a是哪里来的呢？是我们最后cli.New(reg, router, cxt).Help(Summary, Description, flags).Run(&ldquo;hello&rdquo;)，这里的flags里面的flags.String()这里定义的。</p>
+
+<p>如果只有一条命令，就没上面意思了，如果多条命令呢？
+reg.Route(&ldquo;hello&rdquo;, &ldquo;A Hello World route&rdquo;).
+        Does(fmt.Printf, &ldquo;_&rdquo;).
+        Using(&ldquo;format&rdquo;).WithDefault(&ldquo;Hello %s!\n&rdquo;).
+        Using(&ldquo;0&rdquo;).From(&ldquo;cxt:a&rdquo;)</p>
+
+<pre><code>reg.Route("goodbye", "A Goodbye World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Goodbye %s!\n").
+    Using("0").From("cxt:a")
+</code></pre>
+
+<p>看这个，就有了多条命令。
+同样的，调用就变成了这样cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
+和原来的基本一样，只不过最后的Run（“hello”）变成了RunSubcommand()，就是可以调用多个了。
+go run main.go -a Matt hello
+Hello Matt!
+go run main.go -a Matt goodbye
+Goodbye Matt!</p>
+
+<p>但是，如果go run main.go goodbye -a Matt
+输出就是Goodbye World!这是为什么呢？
+这是因为，在command line的不同位置，flag的类型可能是global类型的，或者subcommand 类型的。
+go run main.go [GLOBAL_FLAGS] subcommand [LOCAL_FLAGS]
+global类型的flag可以在整个app中共享，local flag只能对指定的subcommand用。</p>
+
+<p>func main() {
+    reg, router, cxt := cookoo.Cookoo()</p>
+
+<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
+flags.Bool("h", false, "Show help text")
+flags.String("a", "World", "A string to place after 'Hello'")
+
+helloFlags := flag.NewFlagSet("hello", flag.PanicOnError)
+helloFlags.String("s", "Hello", "Alternate salutation")
+
+reg.Route("hello", "A Hello World route").
+    // Not necessary if "subcommand" is true on ParseArgs.
+    //Does(cli.ShiftArgs, "cmd").
+        //Using("args").WithDefault("runner.Args").
+        //Using("n").WithDefault(1).
+    Does(cli.ParseArgs, "extras").
+        Using("flagset").WithDefault(helloFlags).
+        Using("args").From("cxt:runner.Args").
+        Using("subcommand").WithDefault(true).
+    Does(fmt.Printf, "_").
+        Using("format").WithDefault("%s %s!\n").
+        Using("0").From("cxt:s").
+        Using("1").From("cxt:a")
+
+reg.Route("goodbye", "A Goodbye World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Goodbye %s!\n").
+    Using("0").From("cxt:a")
+
+cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
+</code></pre>
+
+<p>}</p>
+
+<p>两个地方注意一下，第一，flag.NewFlagSet的时候，里面的是global，还是subcommand的名字，直接决定了是否是local flag。第二，后面route配置的时候，注意多了一个Does，用来加上subcommand的WithDefault，设置为true。
+调用有点意思。
+$ go run main.go hello
+Hello World!</p>
+
+<p>$ go run main.go hello -s Hi
+Hi World!</p>
+
+<p>$ go run main.go -a You hello
+Hello You!</p>
+
+<p>$ go run main.go -a You hello -s Hi
+Hi You!</p>
+
+<p>让我们来看看，做同样的事情的另外一种实现方式。
+reg.Route(&ldquo;hello&rdquo;, &ldquo;A Hello World route&rdquo;).
+        Does(cli.ShiftArgs, &ldquo;cmd&rdquo;).
+            Using(&ldquo;args&rdquo;).WithDefault(&ldquo;runner.Args&rdquo;).
+            Using(&ldquo;n&rdquo;).WithDefault(1).
+        Does(cli.ParseArgs, &ldquo;extras&rdquo;).
+            Using(&ldquo;flagset&rdquo;).WithDefault(helloFlags).
+            Using(&ldquo;args&rdquo;).From(&ldquo;cxt:runner.Args&rdquo;).
+        Does(fmt.Printf, &ldquo;_&rdquo;).
+            Using(&ldquo;format&rdquo;).WithDefault(&ldquo;%s %s!\n&rdquo;).
+            Using(&ldquo;0&rdquo;).From(&ldquo;cxt:s&rdquo;).
+            Using(&ldquo;1&rdquo;).From(&ldquo;cxt:a&rdquo;)</p>
+
+<p>这里没有了之前的设置subcommand.WithDefault的true。而是通过移动参数的形式。
+go run main.go -a matt hello -s hi
+这样会给os.Args设置成这样：[]string{ &ldquo;-a&rdquo;, &ldquo;matt&rdquo;, &ldquo;hello&rdquo;, &ldquo;-s&rdquo;, &ldquo;hi&rdquo;}
+当程序第一次跑的时候，会把global flags提取出来，把剩余的放入runner.Args。类似于cxt.Put(&ldquo;runner.Args&rdquo;, []string{&ldquo;hello&rdquo;, &ldquo;-s&rdquo;, &ldquo;hi&rdquo;})，但是，当hello command run的时候，我们希望获得他自己的flag，但是hello却是第一个参数，所以，我们要把这个移动一下，就有了那个cli.ShiftArgs，那段代码的意思就是，把第一个参数放入cmd，剩下的参数放入到cxt:runner.Args，接下来的就和上个实现基本一致了。这个方法即可以用来调试，又可以用来定义更多的参数。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Deis源码解读-deis基本组件]]></title>
+    <link href="http://monkey-h.github.io/blog/deis-3/"/>
+    <updated>2015-09-18T11:08:53+08:00</updated>
+    <id>http://monkey-h.github.io/blog/deis-3</id>
+    <content type="html"><![CDATA[<h3>deis基本组件</h3>
+
+<p>这一篇文章开始，开始阅读deis源码。首先，介绍一下deis按照构架的基本组件。</p>
+
+<!--more-->
+
+
+<h4>controller</h4>
+
+<p>controller组件是一个http 的api server，和我之前写的nap的controller组件类似，是一个控制组件，用来控制整个平台的工作流。但是controller组件包含了nap controller组件没有的功能，也就是nap平台fleet的功能。用来决定容器跑在什么位置上的功能，叫做schedule。deis的command line就是和这个controller组件进行交互的。</p>
+
+<h4>database</h4>
+
+<p>顾名思义，数据库组件，deis用的PostgreSQL数据库，这个组件用来存储deis的一些持久的平台信息，备份和WAL（预写日志 write-ahead logging）日志信息，也存在这个地方。</p>
+
+<h4>builder</h4>
+
+<p>builder组件用git服务器来处理应用build过程。包括通过ssh发送过来的git push请求，验证ssh key fingerprint，验证是否有些权限，从更新过的git repository中，build 一个新的docker image，增加最后的config信息到docker image，push image到registry，通过controller触发一个新的release。</p>
+
+<h4>registry</h4>
+
+<p>用来存储docker images的组件，至于image data信息是存储在store中的。</p>
+
+<h4>logspout</h4>
+
+<p>这是他们做好的一个容器，专门用来收集每个coreos主机上所有的容器的日志信息（第一线程）。所以，集群中所有的coreos主机，都要有logspout这个组件。logspout这个组件会把日志信息发送到logger组件。</p>
+
+<h4>logger</h4>
+
+<p>logger组件是一个syslog 服务器，用来收录logspout从整个集群中发送过来的日志信息。controller会查看这些信息。</p>
+
+<h4>publisher</h4>
+
+<p>这是一个比较小的组件，用来发布container的信息到etcd，这样，router组件才会知道这些信息。</p>
+
+<h4>router</h4>
+
+<p>router组件通过nginx，来路由traffic到应用容器。</p>
+
+<h4>store</h4>
+
+<p>这个组件也是用来存储信息的。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[deis源码解读-go语言学习2]]></title>
@@ -33,35 +296,32 @@
 type Vertex struct {
   X int
   Y int
-}</li>
-</ul>
-
-
-<p>func main() {
-    fmt.Println(Vertex{1, 2})
-    v := Vertex{1,2}
-    v.X = 4
-    p := &amp;v
-    p.Y = 3
 }
-打印出来的是{1 2}
-+ 结构体初始化的时候，可以通过{X:1, Y:2}这种方式初始化，如果省略了其中一个，比如Y，就是初始化的零值。
-+ 数组 var a [2]string a[0]
-+ 切片slice。s := []int{2,3,4,5} 可以通过这种方式访问，s[1:3], s[:3] s[2:]注意，s[a:b]是从a开始，到b-1结束。
-+ slice除了以上面的方式构建，还可以通过make函数构建。a := make([]int, 5)，这个5就是slice的len。slice有两个函数要注意，一是len，一是cap。len(x) cap(x)，len是长度，cap是能够装的个数。make([]int ,0,5)第一个就是len，后一个就是cap。slice定义的时候可以不定义大小，通过append来增加输入。当超过cap的时候，会自动增加大小。
+func main() {
+  fmt.Println(Vertex{1, 2})
+  v := Vertex{1,2}
+  v.X = 4
+  p := &amp;v
+  p.Y = 3
+}
+打印出来的是{1 2}</li>
+<li>结构体初始化的时候，可以通过{X:1, Y:2}这种方式初始化，如果省略了其中一个，比如Y，就是初始化的零值。</li>
+<li>数组 var a [2]string a[0]</li>
+<li>切片slice。s := []int{2,3,4,5} 可以通过这种方式访问，s[1:3], s[:3] s[2:]注意，s[a:b]是从a开始，到b-1结束。</li>
+<li>slice除了以上面的方式构建，还可以通过make函数构建。a := make([]int, 5)，这个5就是slice的len。slice有两个函数要注意，一是len，一是cap。len(x) cap(x)，len是长度，cap是能够装的个数。make([]int ,0,5)第一个就是len，后一个就是cap。slice定义的时候可以不定义大小，通过append来增加输入。当超过cap的时候，会自动增加大小。
 var a []int
 a = append(a,1)
-a = append(a, 2,3,4)
-+ 通过for循环的range格式对slice循环。
+a = append(a, 2,3,4)</li>
+<li>通过for循环的range格式对slice循环。
 func main(){
 var pow = []int{1,2,3,4,5}
 for i,v := range pow{
 fmt.Printf(&ldquo;%d: %d \n&rdquo;, i,v)
 }
 }
-这里的i，v就是小标和数字。
-+ 如果用不到i，就用<em>来代替。for </em>, value := range pow
-+ map和java的hashmap很像。
+这里的i，v就是小标和数字。</li>
+<li>如果用不到i，就用<em>来代替。for </em>, value := range pow</li>
+<li>map和java的hashmap很像。
 type Vertex struct{
 Lat,Long float64
 }
@@ -70,8 +330,8 @@ m = make(map[string]Vertex)
 m[&ldquo;hello&rdquo;] = Vertext{
 1.3,2.9
 }
-注意，map在使用之前，必须用make来创建。没有make的map是空的，值为nil，并且不能赋值。
-+ 另一种初始化方式。
+注意，map在使用之前，必须用make来创建。没有make的map是空的，值为nil，并且不能赋值。</li>
+<li>另一种初始化方式。
 var m = map[string]Vertex{
 &ldquo;hello&rdquo;: Vertex{
 1,2
@@ -79,12 +339,12 @@ var m = map[string]Vertex{
 &ldquo;world&rdquo;:Vertex{
 3,4
 },
-}
-+ m := make(map[string]int)
+}</li>
+<li>m := make(map[string]int)
 m[&ldquo;hello&rdquo;]=42
 delete(m, &ldquo;hello&rdquo;)
-v, ok := m[&ldquo;hello&rdquo;]判断有没有返回值。如果map中读取某个不存在的键时，结果是map元素类型的零值。
-+ go语言中没有类的概念，但是可以在结构体类型上定义方法。比如
+v, ok := m[&ldquo;hello&rdquo;]判断有没有返回值。如果map中读取某个不存在的键时，结果是map元素类型的零值。</li>
+<li>go语言中没有类的概念，但是可以在结构体类型上定义方法。比如
 type MyFloat float64
 func (f MyFloat) Abs() float64{
 if f&lt;0 {
@@ -92,10 +352,12 @@ return float(-f)
 }
 return float64(f)
 }
-然后在后面就可以通过f.Abs()来调用。
-+ 在结构体类型上定义方法的时候，注意，尽量用指针来做，用指针可以用来修改结构体变量的值，而不用指针的话，修改的只是一个拷贝，所以不会修改原来的值，是没有意义的。
-+ go新开启一个线程。
-+ channel是有类型的管道，默认情况下，在另一端没有准备好之前，接受都会阻塞，使得goroutine在没有明确的锁或者静态变量的情况下进行同步。不过channel和map和slice一样，都需要用make来创建一下才可以使用。c := make(chan int)后面的int代表之后要送进去的值。c &lt;- sum     x,y := &lt;-c,&lt;-c分别是加入一个值和推出一个值。</p>
+然后在后面就可以通过f.Abs()来调用。</li>
+<li>在结构体类型上定义方法的时候，注意，尽量用指针来做，用指针可以用来修改结构体变量的值，而不用指针的话，修改的只是一个拷贝，所以不会修改原来的值，是没有意义的。</li>
+<li>go新开启一个线程。</li>
+<li>channel是有类型的管道，默认情况下，在另一端没有准备好之前，接受都会阻塞，使得goroutine在没有明确的锁或者静态变量的情况下进行同步。不过channel和map和slice一样，都需要用make来创建一下才可以使用。c := make(chan int)后面的int代表之后要送进去的值。c &lt;- sum     x,y := &lt;-c,&lt;-c分别是加入一个值和推出一个值。</li>
+</ul>
+
 ]]></content>
   </entry>
   
@@ -356,6 +618,9 @@ id -a bob
 所有的文件的权限都是root的，改成nap的。
 shdo chown nap ./*
 就可以了。过于残暴，可能会引起某些问题。</p>
+
+<p>Q:coreos 可以连接外网，容器内部不可以。
+A:和flannel网络有关。 sudo iptables -L  -t nat -n</p>
 ]]></content>
   </entry>
   
@@ -2269,236 +2534,6 @@ reduce就是比对。我们找到每个key后面的value中，有没有#，如�
 </span><span class='line'>  
 </span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[vpn添加路由规则+octopress push报错]]></title>
-    <link href="http://monkey-h.github.io/blog/net-add/"/>
-    <updated>2015-05-07T14:56:51+08:00</updated>
-    <id>http://monkey-h.github.io/blog/net-add</id>
-    <content type="html"><![CDATA[<h3>写在前面</h3>
-
-<p>关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。</p>
-
-<!--more-->
-
-
-<ul>
-<li><p>vpn添加路由规则
-国内墙的厉害，没有vpn感觉就活不了，免费的vpn说不定就被封了，干脆买了一个，买的是一个叫做云梯VPN的VPN，用起来速度还可以，但是有一个不好的地方就是，他是转发所有流量的，就是说，他不会做一个判断，所有的流量都通过他的VPN转发出去。比如访问个百度的网址，也是先转到国外他的vpn服务器，然后从那里转发出来，查找国内的百度服务器。这样会相当慢，当然了，也不是很慢，况且我们翻墙主要是为了访问国外的资源，国内基本不怎么访问，也就无所谓了。但是，有一些情况比较特殊，因为我经常要访问我们局域网内的服务器，这就比较麻烦了，因为你转发到国外的服务器上之后，再转发给国内的时候，是找不到我们局域网内的服务器的，这就需要添加一个路由规则，让所有有关访问局域网内的ip的请求，不走vpn，而是走我们局域网内的路由器就可以了。
-<code>sudo /sbin/route add -net 114.212 192.168.1.1</code>
-114.212是我们局域网的ip地址段，后面的192.168.1.1是路由器的ip地址。</p></li>
-<li><p>octopress rake gen_deploy报错
-搭建好的octopress，刚开始gen_deploy的时候可以push，但是后来重启了机器，就不可以了，报错
-<img src="http://i1066.photobucket.com/albums/u407/5681713/everything/octopress_zpsuen9rm2b.png" alt="" />
-经查证，好像是本地的rsa key没有加入到本地的钥匙中，添加进去就可以了。
-<code>ssh-add ~/.ssh/id_rsa</code></p></li>
-</ul>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在coreos系统下，同时添加flannel和私有仓库的参数]]></title>
-    <link href="http://monkey-h.github.io/blog/flannel-registry/"/>
-    <updated>2015-05-06T17:07:40+08:00</updated>
-    <id>http://monkey-h.github.io/blog/flannel-registry</id>
-    <content type="html"><![CDATA[<h3>写在前面</h3>
-
-<p>前面我们已经搭建好了一个coreos集群 <a href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/">看这里</a>，正如这篇blog里面说的一样，我们没有外网，所以我们自己搭建了一个私有仓库，方法可以去官网找，很简答的两行命令，这里就不再叙述。既然搭建了私服，我们就希望我们的这个集群使用这个集群。其次，我们搭建了一个集群，我们也希望屏蔽这是一个集群的概念，让用户用起来就像在使用一个主机的服务器一样，所以我们需要<a href="github.com/coreos/flannel">flanel</a>服务。这就涉及到给docker daemon添加多个参数，我们这里记录一下过程。同时，这也是如果在coreos集群中如何运行service的介绍。</p>
-
-<!--more-->
-
-
-<h4>添加私服参数</h4>
-
-<p>我们的服务器是没有外网的，所以，从docker hub上下载一个镜像都是问题，所以我们搭建了一个私有的docker registry。关于docker registry的东西，其实也是很有意思的，如果以后有机会，我们还会写一篇文章来介绍docker registry。我们现在的方式是，自己建立一个私服，然后从可以连接外网的地方下载一些image，然后上传到私服，这样，就可以直接从我们的私服上下载了，而且速度相当快。因为是局域网内，而且没有经过国防网。
-系统默认的docker.service在</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/usr/lib64/systemd/system/docker.service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>里面，但是这个路径下的文件是可读不可写的，所以我们要把他移动到一个可读可写的地方。不只是docker.service，只要是unit files都要在这个路径</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/etc/systemd/system</span></code></pre></td></tr></table></div></figure>
-
-
-<p>所以，第一步，拷贝一份docker.service。并编辑。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo cp /usr/lib64/systemd/system/docker.service /etc/systemd/system/
-</span><span class='line'>cd /etc/systemd/system
-</span><span class='line'>sudo vim docker.service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>把其中的这句话</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ExecStart=/usr/lib/coreos/dockerd --daemon --host=fd:// $DOCKER_OPTS -- $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ</span></code></pre></td></tr></table></div></figure>
-
-
-<p>改成</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ExecStart=/usr/lib/coreos/dockerd --daemon --host=fd:// $DOCKER_OPTS --insecure-registry docker.iwanna.xyz:5000 $DOCKER_OPT_BIP $DOCKER_OPT_MTU $DOCKER_OPT_IPMASQ</span></code></pre></td></tr></table></div></figure>
-
-
-<p>加的那个参数，就是告诉本机，这个地址的私有仓库可以不走https协议，要不然在pull image的时候会报错。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/insecure_zpsjexwxehm.png" alt="insecure" />
-接下来，我们要让这个service生效，然后启动。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl stop docker.service
-</span><span class='line'>sudo systemctl enable /etc/systemd/system/docker.service
-</span><span class='line'>sudo systemctl daemon-reload
-</span><span class='line'>sudo systemctl start docker.service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>接下来就可以pull私有仓库里可以编译flannel的image了。在docker hub里面，叫做google/golang是一个支持go语言的image，我在上传到私有仓库的时候，为了名字好记，重新命名了，实际上就是这个image。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/pull_zpsihbxjfxl.png" alt="pull" /></p>
-
-<h4>安装flannel</h4>
-
-<p>现在我们已经从私服上下载下来了编译flannel的image，现在我们需要flannel的源码，由于我们这里不能使用外网，所以，还是通过tomcat的方式下载，如果可以使用外网，可以直接使用git clone来下载</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git clone https://github.com/coreos/flannel.git</span></code></pre></td></tr></table></div></figure>
-
-
-<p>我们这里是从tomcat服务器上下载的。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/wget_zpswmf12hii.png" alt="wget" />
-接下来，解压，移动到/opt目录，为什么这么做，是为了防止以后误删。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>tar -zxf flannel.tar.gz
-</span><span class='line'>sudo mkdir /opt
-</span><span class='line'>sudo mv flannel/* /opt
-</span><span class='line'>cd /opt</span></code></pre></td></tr></table></div></figure>
-
-
-<p>好了，现在可以编译了。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>docker run -v /opt:/opt/flannel -ti docker.iwanna.xyz:5000/hmonkey/flannel /bin/bash -c "cd /opt/flannel && ./build"</span></code></pre></td></tr></table></div></figure>
-
-
-<p><img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/building_zps5vlcndnc.png" alt="building" />
-接下来，我们就要创建flannel服务了。
-进入到我们的unit files目录。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>cd /etc/systemd/system
-</span><span class='line'>sudo touch flannel.service
-</span><span class='line'>sudo vim flannel.service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在里面写入这样的代码。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
-</span><span class='line'>Description=flannel
-</span><span class='line'>Requires=etcd.service
-</span><span class='line'>After=etcd.service
-</span><span class='line'>
-</span><span class='line'>[Service]
-</span><span class='line'>ExecStartPre=-/usr/bin/etcdctl mk /coreos.com/network/config '{"Network":"10.0.0.0/16"}'
-</span><span class='line'>ExecStart=/opt/bin/flanneld
-</span><span class='line'>
-</span><span class='line'>[Install]
-</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后，启动这个服务。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>sudo systemctl enable flannel.service
-</span><span class='line'>sudo systemctl start flannel.service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>可以查看状态，如果是这样，就说明成功了。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/status_zpsk02mrnhs.png" alt="status" />
-接下来，停掉docker.service，删除网桥docker0，让docker0使用flannel的网桥，然后修改docker.service，重启docker。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>source /run/flannel/subnet.env
-</span><span class='line'>sudo systemctl stop docker.service
-</span><span class='line'>sudo ifconfig docker0 ${FLANNEL_SUBNET}
-</span><span class='line'>sudo vim docker.service
-</span><span class='line'>sudo systemctl daemon-reload
-</span><span class='line'>sudo systemctl start docker.service</span></code></pre></td></tr></table></div></figure>
-
-
-<p>编辑docker.service的时候，使得最后，docker.service看起来是这个样子的。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>[Unit]
-</span><span class='line'>Description=Docker Application Container Engine
-</span><span class='line'>Documentation=http://docs.docker.com
-</span><span class='line'>After=docker.socket early-docker.target network.target
-</span><span class='line'>Requires=docker.socket early-docker.target
-</span><span class='line'>
-</span><span class='line'>[Service]
-</span><span class='line'>Environment=TMPDIR=/var/tmp
-</span><span class='line'>EnvironmentFile=-/run/flannel/subnet.env
-</span><span class='line'>MountFlags=slave
-</span><span class='line'>LimitNOFILE=1048576
-</span><span class='line'>LimitNPROC=1048576
-</span><span class='line'>ExecStart=/usr/lib/coreos/dockerd --insecure-registry docker.iwanna.xyz:5000 --bip=${FLANNEL_SUBNET} --mtu=${FLANNEL_MTU} --daemon --host=fd://
-</span><span class='line'>
-</span><span class='line'>[Install]
-</span><span class='line'>WantedBy=multi-user.target</span></code></pre></td></tr></table></div></figure>
-
-
-<p>好了，大功告成，验证一下。
-我们在coreos3上随便跑一个container，可以看到，他的ip是我们之前用flannel获得的。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/try_zpsdxnqxstq.png" alt="try" />
-然后我们在coreos1上，ping这个ip，可以看到，完全可以ping通。
-<img src="http://i1066.photobucket.com/albums/u407/5681713/flannel%20regitstry/ping_zpsfvnfwq69.png" alt="ping" />
-同样的，简单学习一下systemd的语法，就可以让我们开启不同的service，如果这些service中有涉及到有可能修改docker daemon的参数的，就可以通过上面这个例子进行修改。</p>
 ]]></content>
   </entry>
   

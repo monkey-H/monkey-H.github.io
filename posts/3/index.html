@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 ssh进入某一个机器的时候，要么提供那台机器的密码，要么采用别的安全协议，比如说rsa协议，我们就是通过rsa协议实现了不输入密码就可以直接登录别的主机。这样做主要是为了，我们在利用mpi进行计算的时候，不能通过输入密码的方式进行访问，所以，有这个需求。 继续阅读; May 6th, &hellip;">
+	<meta name="description" content=" 写在前面 关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。 继续阅读; May 7th, 2015 ">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,72 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/net-add/">
+		
+			Vpn添加路由规则+octopress Push报错</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。</p>
+
+
+		
+		<a href="/blog/net-add/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 7th, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/flannel-registry/">
+		
+			在coreos系统下，同时添加flannel和私有仓库的参数</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>前面我们已经搭建好了一个coreos集群 <a href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/">看这里</a>，正如这篇blog里面说的一样，我们没有外网，所以我们自己搭建了一个私有仓库，方法可以去官网找，很简答的两行命令，这里就不再叙述。既然搭建了私服，我们就希望我们的这个集群使用这个集群。其次，我们搭建了一个集群，我们也希望屏蔽这是一个集群的概念，让用户用起来就像在使用一个主机的服务器一样，所以我们需要<a href="github.com/coreos/flannel">flanel</a>服务。这就涉及到给docker daemon添加多个参数，我们这里记录一下过程。同时，这也是如果在coreos集群中如何运行service的介绍。</p>
+
+
+		
+		<a href="/blog/flannel-registry/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+May 6th, 2015</div>
+	<div class="tags">
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -339,75 +405,14 @@ May 1st, 2015</div>
 </div>
 </article>
 
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/bash-trick/">
-		
-			Bash 脚本语言学习收获</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。</p>
-
-
-		
-		<a href="/blog/bash-trick/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Apr 29th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/hello-world/">
-		
-			Hello World</a>
-	</h2>
-	<div class="entry-content">
-		<p><code>hello! world</code></p>
-
-		
-		
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Apr 28th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
 <nav id="pagenavi">
     
         
             <a href="/posts/2" class="prev">Prev</a>
         
     
+    
+        <a href="/posts/4" class="next">Next</a>
     
     <div class="center"><a href="/blog/archives">Blog Archives</a></div>
 </nav>

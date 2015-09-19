@@ -3,12 +3,11 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>随笔 - Welcome to monkey-H&#8217;s blog</title>
+	<title>Welcome to monkey-H&#8217;s blog</title>
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="Q &amp; A 实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需 问题与解答 Q: no journal files were found
-A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx. &hellip;">
+	<meta name="description" content="写在前面 之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,33 +73,25 @@ A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx
 	
 		
 	
-	<div id="content" class="inner"><article class="post">
-	<h2 class="title">随笔</h2>
-	<div class="entry-content"><h3>Q &amp; A</h3>
-
-<p>实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需</p>
-
-<!--more-->
+	<div id="content" class="inner">
 
 
-<h3>问题与解答</h3>
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/bash-trick/">
+		
+			Bash 脚本语言学习收获</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
 
-<p>Q: no journal files were found
-A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。但是，由于某些原因，比如网上说的：
-I&rsquo;ve finally pinpoint the cause: I&rsquo;m logging in too early. Somehow, if you login after just few secs from the instantiation of the GCE machine, my user will not be added to the group systemd-journal. Thus, journalctl as normal user returns &ldquo;No journal files were found&rdquo;, while doing sudo journalctl returns the logs.
-What&rsquo;s worse is that the situation is then permanent: even if I log out, the user will never be added to the group systemd-journal, but I guess I&rsquo;m in a limit scenario.
-解决办法，
-sudo usermod -a -G systemd-journal bob
-id -a bob
-但是对我没用。有一种简单粗暴的方法。
-在用户目录/var/log/journal/machine-id/路径下
-所有的文件的权限都是root的，改成nap的。
-shdo chown nap ./*
-就可以了。过于残暴，可能会引起某些问题。</p>
+<p>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。</p>
 
-<p>Q:coreos 可以连接外网，容器内部不可以。
-A:和flannel网络有关。 sudo iptables -L  -t nat -n</p>
-</div>
+
+		
+		<a href="/blog/bash-trick/" class="more-link">继续阅读;</a>
+	</div>
 
 
 <div class="meta">
@@ -109,7 +100,7 @@ A:和flannel网络有关。 sudo iptables -L  -t nat -n</p>
 
 
 
-Jun 29th, 2015</div>
+Apr 29th, 2015</div>
 	<div class="tags">
 
 </div>
@@ -117,19 +108,45 @@ Jun 29th, 2015</div>
 </div>
 </article>
 
-	<div class="share">
-	<div class="addthis_toolbox addthis_default_style ">
+
+    <article class="post">
+	<h2 class="title">
 		
+		<a href="/blog/hello-world/">
 		
-		<a class="addthis_button_tweet"></a>
-		
+			Hello World</a>
+	</h2>
+	<div class="entry-content">
+		<p><code>hello! world</code></p>
+
 		
 		
 	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Apr 28th, 2015</div>
+	<div class="tags">
+
+</div>
 	
 </div>
+</article>
 
-
+<nav id="pagenavi">
+    
+        
+            <a href="/posts/3" class="prev">Prev</a>
+        
+    
+    
+    <div class="center"><a href="/blog/archives">Blog Archives</a></div>
+</nav>
 </div>
 	<footer id="footer" class="inner">Copyright &copy; 2015
 

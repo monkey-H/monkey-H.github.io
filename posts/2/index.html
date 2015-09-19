@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 前面一片文章说了关于配置多个实例的问题，其实我们应该更加深入的理解一下。很容易混淆的一个问题就是单应用多实例和一组类似应用的区别。而且，他们实现起来也是有很大差别的。下面我们对这个两个问题进行分别探讨，并分别实现，完成nap的更多功能。 继续阅读; Jun 9th, 2015 &hellip;">
+	<meta name="description" content="写在前面 一个好的paas平台，并不只是提供了牛逼的功能，还在于好的交互。我们之前都是追求功能的完整性，在大体框架完成的时候，我们需要的还有较好的编程风格和交互，所以我们花一些时间思考一下关于同意paas平台入口的问题，这样，对于规范之后平台的开发，web manager管理界面的开发， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,80 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-9/">
+		
+			设计自己的paas平台nap 9&#8212;-统一paas平台入口</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>一个好的paas平台，并不只是提供了牛逼的功能，还在于好的交互。我们之前都是追求功能的完整性，在大体框架完成的时候，我们需要的还有较好的编程风格和交互，所以我们花一些时间思考一下关于同意paas平台入口的问题，这样，对于规范之后平台的开发，web manager管理界面的开发，都有很大的帮助。</p>
+
+
+		
+		<a href="/blog/my-paas-9/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jun 15th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
+
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/my-paas-8/">
+		
+			设计自己的paas平台nap 8&#8212;-支持mpi应用</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>之前我们已经实现了Dockerfile应用，maven应用的支持，现在，我们要加入另外一种类型，这种类型和之前的两种都不一样，这种应用和之前的应用的最大区别在于，这种类型的应用，并不是一个容器就可以完成的，需要多个容器配合，mpi和mapreduce应用就是这样，他们需要master slave节点，共同协作完成一件任务。我们这里先介绍mpi应用的设计，后面再介绍mapreduce应用的支持实现。</p>
+
+
+		
+		<a href="/blog/my-paas-8/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Jun 10th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
+
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -361,72 +435,6 @@ May 18th, 2015</div>
 
 
 May 8th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/net-add/">
-		
-			Vpn添加路由规则+octopress Push报错</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>关于vpn访问局域网内服务器和octopress deploy的时候报错，记录一下，年纪大了，老是忘记怎么做。</p>
-
-
-		
-		<a href="/blog/net-add/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 7th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/flannel-registry/">
-		
-			在coreos系统下，同时添加flannel和私有仓库的参数</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>前面我们已经搭建好了一个coreos集群 <a href="http://monkey-h.github.io/blog/coreoschi-xian-an-zhuang/">看这里</a>，正如这篇blog里面说的一样，我们没有外网，所以我们自己搭建了一个私有仓库，方法可以去官网找，很简答的两行命令，这里就不再叙述。既然搭建了私服，我们就希望我们的这个集群使用这个集群。其次，我们搭建了一个集群，我们也希望屏蔽这是一个集群的概念，让用户用起来就像在使用一个主机的服务器一样，所以我们需要<a href="github.com/coreos/flannel">flanel</a>服务。这就涉及到给docker daemon添加多个参数，我们这里记录一下过程。同时，这也是如果在coreos集群中如何运行service的介绍。</p>
-
-
-		
-		<a href="/blog/flannel-registry/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-May 6th, 2015</div>
 	<div class="tags">
 
 </div>

@@ -3,12 +3,11 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>随笔 - Welcome to monkey-H&#8217;s blog</title>
+	<title>Deis源码解读-deis基本组件 - Welcome to monkey-H&#8217;s blog</title>
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="Q &amp; A 实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需 问题与解答 Q: no journal files were found
-A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx. &hellip;">
+	<meta name="description" content="deis基本组件 这一篇文章开始，开始阅读deis源码。首先，介绍一下deis按照构架的基本组件。 controller controller组件是一个http 的api server，和我之前写的nap的controller组件类似，是一个控制组件，用来控制整个平台的工作流。 &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -75,31 +74,49 @@ A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx
 		
 	
 	<div id="content" class="inner"><article class="post">
-	<h2 class="title">随笔</h2>
-	<div class="entry-content"><h3>Q &amp; A</h3>
+	<h2 class="title">Deis源码解读-deis基本组件</h2>
+	<div class="entry-content"><h3>deis基本组件</h3>
 
-<p>实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需</p>
+<p>这一篇文章开始，开始阅读deis源码。首先，介绍一下deis按照构架的基本组件。</p>
 
 <!--more-->
 
 
-<h3>问题与解答</h3>
+<h4>controller</h4>
 
-<p>Q: no journal files were found
-A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。但是，由于某些原因，比如网上说的：
-I&rsquo;ve finally pinpoint the cause: I&rsquo;m logging in too early. Somehow, if you login after just few secs from the instantiation of the GCE machine, my user will not be added to the group systemd-journal. Thus, journalctl as normal user returns &ldquo;No journal files were found&rdquo;, while doing sudo journalctl returns the logs.
-What&rsquo;s worse is that the situation is then permanent: even if I log out, the user will never be added to the group systemd-journal, but I guess I&rsquo;m in a limit scenario.
-解决办法，
-sudo usermod -a -G systemd-journal bob
-id -a bob
-但是对我没用。有一种简单粗暴的方法。
-在用户目录/var/log/journal/machine-id/路径下
-所有的文件的权限都是root的，改成nap的。
-shdo chown nap ./*
-就可以了。过于残暴，可能会引起某些问题。</p>
+<p>controller组件是一个http 的api server，和我之前写的nap的controller组件类似，是一个控制组件，用来控制整个平台的工作流。但是controller组件包含了nap controller组件没有的功能，也就是nap平台fleet的功能。用来决定容器跑在什么位置上的功能，叫做schedule。deis的command line就是和这个controller组件进行交互的。</p>
 
-<p>Q:coreos 可以连接外网，容器内部不可以。
-A:和flannel网络有关。 sudo iptables -L  -t nat -n</p>
+<h4>database</h4>
+
+<p>顾名思义，数据库组件，deis用的PostgreSQL数据库，这个组件用来存储deis的一些持久的平台信息，备份和WAL（预写日志 write-ahead logging）日志信息，也存在这个地方。</p>
+
+<h4>builder</h4>
+
+<p>builder组件用git服务器来处理应用build过程。包括通过ssh发送过来的git push请求，验证ssh key fingerprint，验证是否有些权限，从更新过的git repository中，build 一个新的docker image，增加最后的config信息到docker image，push image到registry，通过controller触发一个新的release。</p>
+
+<h4>registry</h4>
+
+<p>用来存储docker images的组件，至于image data信息是存储在store中的。</p>
+
+<h4>logspout</h4>
+
+<p>这是他们做好的一个容器，专门用来收集每个coreos主机上所有的容器的日志信息（第一线程）。所以，集群中所有的coreos主机，都要有logspout这个组件。logspout这个组件会把日志信息发送到logger组件。</p>
+
+<h4>logger</h4>
+
+<p>logger组件是一个syslog 服务器，用来收录logspout从整个集群中发送过来的日志信息。controller会查看这些信息。</p>
+
+<h4>publisher</h4>
+
+<p>这是一个比较小的组件，用来发布container的信息到etcd，这样，router组件才会知道这些信息。</p>
+
+<h4>router</h4>
+
+<p>router组件通过nginx，来路由traffic到应用容器。</p>
+
+<h4>store</h4>
+
+<p>这个组件也是用来存储信息的。</p>
 </div>
 
 
@@ -109,8 +126,12 @@ A:和flannel网络有关。 sudo iptables -L  -t nat -n</p>
 
 
 
-Jun 29th, 2015</div>
+Sep 18th, 2015</div>
 	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
 
 </div>
 	

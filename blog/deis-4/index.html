@@ -1,0 +1,345 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Deis源码解读-deis基本组件-builder - Welcome to monkey-H&#8217;s blog</title>
+	<meta name="author" content="monkey-H">
+
+	
+	<meta name="description" content="写在前面 反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。 边读边学 多代码的时候要有耐心，不要想着一口吃个大胖子，一点一点来，不懂的地方就查，不要想着跳过。特别注意import方法里面引入的包，这个很重要。
+import os 像这些没有加网址的， &hellip;">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link href="/atom.xml" rel="alternate" title="Welcome to monkey-H's blog" type="application/atom+xml">
+	<link rel="canonical" href="">
+	<link href="/favicon.png" rel="shortcut icon">
+	<link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+	<!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+	<script async="true" src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+	
+</head>
+
+
+<body>
+	<header id="header" class="inner"><h1><a href="/">Welcome to monkey-H&#8217;s blog</a></h1>
+<nav id="main-nav"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</nav>
+<nav id="mobile-nav">
+	<div class="alignleft menu">
+		<a class="button">Menu</a>
+		<div class="container"><ul class="main">
+	<li><a href="/">Blog</a></li>
+	<li><a href="/blog/archives">Archives</a></li>
+</ul>
+</div>
+	</div>
+	<div class="alignright search">
+		<a class="button"></a>
+		<div class="container">
+			<form action="https://www.google.com/search" method="get">
+				<input type="text" name="q" results="0">
+				<input type="hidden" name="q" value="site:monkey-h.github.io">
+			</form>
+		</div>
+	</div>
+</nav>
+<nav id="sub-nav" class="alignright">
+	<div class="social">
+		
+		
+		
+		
+    
+		
+		
+		
+		
+		
+		<a class="rss" href="/atom.xml" title="RSS">RSS</a>
+		
+    
+	</div>
+	<form class="search" action="https://www.google.com/search" method="get">
+		<input class="alignright" type="text" name="q" results="0">
+		<input type="hidden" name="q" value="site:monkey-h.github.io">
+	</form>
+</nav>
+
+</header>
+	
+		
+	
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Deis源码解读-deis基本组件-builder</h2>
+	<div class="entry-content"><h3>写在前面</h3>
+
+<p>反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。</p>
+
+<!--more-->
+
+
+<h4>边读边学</h4>
+
+<p>多代码的时候要有耐心，不要想着一口吃个大胖子，一点一点来，不懂的地方就查，不要想着跳过。特别注意import方法里面引入的包，这个很重要。
+import os 像这些没有加网址的，都是go语言自带的一些标准库。os提供了一套和平台无关的接口，用来操作系统功能。和操作系统进行交互。
+import github.com/masterminds/cookoo go语言代码，一般都引入了大量的网上代码库，这就是其中一个。</p>
+
+<h4>cookoo</h4>
+
+<p>既然他引入了cookoo，我们就看看这个cookoo是个什么吊东西。
+直接进入那个github的网址。
+cookoo是一个开发框架。开发者经常把他当做一个中间件平台，这个平台可以给开发者足够的灵活性来开发应用，同时，handles the top-level structure for you.
+main.go</p>
+
+<p>package main</p>
+
+<p>import (
+    &ldquo;github.com/Masterminds/cookoo&rdquo;
+    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
+)</p>
+
+<p>func main() {
+    cli.New(cookoo.Cookoo()).Run(&ldquo;help&rdquo;)
+}</p>
+
+<p>可以看到，这里用cli.New()创建了一个新的cookoo app，这句话反悔了三个东西，registry（用来声明routes），router（用来执行route），context（用来给app传送数据等）</p>
+
+<p>运行是通过go run main.go -h这样来运行，或者go run main.go这样。这里的-h是-help的意思，这个route是cookoo默认就有的，不需要我们自己再去定义。</p>
+
+<p>func main() {
+    reg, router, cxt := cookoo.Cookoo()</p>
+
+<pre><code>reg.Route("hello", "A Hello World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Hello World!\n")
+
+cli.New(reg, router, cxt).Run("hello")
+</code></pre>
+
+<p>}
+这里就不用说了，重新定义了main函数。第一条命令就返回了上面说的那三个东西，第二行就是定义了一条新的route。
+一条route有一个名字和一个描述，接着跟着若干条命令。可以认为是一个task（hello），和一系列的步骤需要完成这个task。刚刚也说了在cookoo app中，router是用来跑task的，但是，用户一般不直接和router交互，而是通过runner来交互。
+在上面我们定义的route中，Route（）函数有两个参数，一个是route的名字，这个很重要，在后面对route的调用中，就是通过route的名字来调用。第二个参数就是一个对route的描述，这个是对开发者而言的，终端用户一般看不到。cookoo用这个东西来自动生成程序的文档。route最终都是要做事情的，所以，在route的后面，都会跟着若干Does，本例中route Does（fmt.Printf, &ldquo;<em>&#8220;）同样的，Does也有两个参数，一个是要跑的命令，另一个是输出的名字。这里的&rdquo;</em>&ldquo;的意思就是忽略这条命令的输出，这个不重要。fmt.Printf是cookoo的内嵌命令，直接调用了go的fmt.Printf。命令需要的参数，我们通过Using来输入，Using通过键值对的方式，把数据传输到Does command中的函数中去。
+那么，跑这调route的方式就是cli.New(reg, router, cxt).Run(&#8220;hello&rdquo;)，然后如果我们go run main.go，就会出现Hello World!的输出。
+package main</p>
+
+<p>import (
+    &ldquo;github.com/Masterminds/cookoo&rdquo;
+    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
+    &ldquo;github.com/Masterminds/cookoo/fmt&rdquo;</p>
+
+<pre><code>"flag"
+</code></pre>
+
+<p>)</p>
+
+<p>const (
+    Summary = &ldquo;A Hello World program&rdquo;
+    Description = <code>This program writes Hello World to standard output.
+With the -a flag, the second word can be replaced by an artitary string.
+</code>
+)</p>
+
+<p>func main() {
+    reg, router, cxt := cookoo.Cookoo()</p>
+
+<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
+flags.Bool("h", false, "Show help text")
+flags.String("a", "World", "A string to place after 'Hello'")
+
+reg.Route("hello", "A Hello World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Hello %s!\n").
+    Using("0").From("cxt:a")
+
+cli.New(reg, router, cxt).Help(Summary, Description, flags).Run("hello")
+</code></pre>
+
+<p>}
+const用来定义常量，summary一般较短，description一般较长。
+flag也是很重要的一个部分。cookoo用的GO语言内置的flag包来支持commandline flag。在上面的例子中，我们声明了两种flag。一个是-h，如果我们想override 默认的flag，这个是必须的。第二个是-a，这个flag允许我们从command line传送一个sring到程序中。
+那么运行起来是什么样子的呢？
+go run main.go
+Hello World!</p>
+
+<p>go run main.go -h</p>
+
+<h1>SUMMARY</h1>
+
+<p>A Hello World program</p>
+
+<h1>USAGE</h1>
+
+<p>This program writes Hello World to standard output.</p>
+
+<p>With the -a flag, the second word can be replaced by an artitary string.</p>
+
+<h1>FLAGS</h1>
+
+<pre><code>-a: A string to place after 'Hello' (Default: 'World')
+-h: Show help text (Default: 'false')
+</code></pre>
+
+<p>go run main.go -a You
+Hello You!</p>
+
+<p>我们再看route的定义。Does有了两个参数，第一个是format，第二个是0，这个0的意思是把第一个参数传给format string。类似于fmt.Printf(format, cxt.Get(&ldquo;a&rdquo;, &ldquo;&rdquo;).(string))那么，cxt的a是哪里来的呢？是我们最后cli.New(reg, router, cxt).Help(Summary, Description, flags).Run(&ldquo;hello&rdquo;)，这里的flags里面的flags.String()这里定义的。</p>
+
+<p>如果只有一条命令，就没上面意思了，如果多条命令呢？
+reg.Route(&ldquo;hello&rdquo;, &ldquo;A Hello World route&rdquo;).
+        Does(fmt.Printf, &ldquo;_&rdquo;).
+        Using(&ldquo;format&rdquo;).WithDefault(&ldquo;Hello %s!\n&rdquo;).
+        Using(&ldquo;0&rdquo;).From(&ldquo;cxt:a&rdquo;)</p>
+
+<pre><code>reg.Route("goodbye", "A Goodbye World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Goodbye %s!\n").
+    Using("0").From("cxt:a")
+</code></pre>
+
+<p>看这个，就有了多条命令。
+同样的，调用就变成了这样cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
+和原来的基本一样，只不过最后的Run（“hello”）变成了RunSubcommand()，就是可以调用多个了。
+go run main.go -a Matt hello
+Hello Matt!
+go run main.go -a Matt goodbye
+Goodbye Matt!</p>
+
+<p>但是，如果go run main.go goodbye -a Matt
+输出就是Goodbye World!这是为什么呢？
+这是因为，在command line的不同位置，flag的类型可能是global类型的，或者subcommand 类型的。
+go run main.go [GLOBAL_FLAGS] subcommand [LOCAL_FLAGS]
+global类型的flag可以在整个app中共享，local flag只能对指定的subcommand用。</p>
+
+<p>func main() {
+    reg, router, cxt := cookoo.Cookoo()</p>
+
+<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
+flags.Bool("h", false, "Show help text")
+flags.String("a", "World", "A string to place after 'Hello'")
+
+helloFlags := flag.NewFlagSet("hello", flag.PanicOnError)
+helloFlags.String("s", "Hello", "Alternate salutation")
+
+reg.Route("hello", "A Hello World route").
+    // Not necessary if "subcommand" is true on ParseArgs.
+    //Does(cli.ShiftArgs, "cmd").
+        //Using("args").WithDefault("runner.Args").
+        //Using("n").WithDefault(1).
+    Does(cli.ParseArgs, "extras").
+        Using("flagset").WithDefault(helloFlags).
+        Using("args").From("cxt:runner.Args").
+        Using("subcommand").WithDefault(true).
+    Does(fmt.Printf, "_").
+        Using("format").WithDefault("%s %s!\n").
+        Using("0").From("cxt:s").
+        Using("1").From("cxt:a")
+
+reg.Route("goodbye", "A Goodbye World route").
+    Does(fmt.Printf, "_").
+    Using("format").WithDefault("Goodbye %s!\n").
+    Using("0").From("cxt:a")
+
+cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
+</code></pre>
+
+<p>}</p>
+
+<p>两个地方注意一下，第一，flag.NewFlagSet的时候，里面的是global，还是subcommand的名字，直接决定了是否是local flag。第二，后面route配置的时候，注意多了一个Does，用来加上subcommand的WithDefault，设置为true。
+调用有点意思。
+$ go run main.go hello
+Hello World!</p>
+
+<p>$ go run main.go hello -s Hi
+Hi World!</p>
+
+<p>$ go run main.go -a You hello
+Hello You!</p>
+
+<p>$ go run main.go -a You hello -s Hi
+Hi You!</p>
+
+<p>让我们来看看，做同样的事情的另外一种实现方式。
+reg.Route(&ldquo;hello&rdquo;, &ldquo;A Hello World route&rdquo;).
+        Does(cli.ShiftArgs, &ldquo;cmd&rdquo;).
+            Using(&ldquo;args&rdquo;).WithDefault(&ldquo;runner.Args&rdquo;).
+            Using(&ldquo;n&rdquo;).WithDefault(1).
+        Does(cli.ParseArgs, &ldquo;extras&rdquo;).
+            Using(&ldquo;flagset&rdquo;).WithDefault(helloFlags).
+            Using(&ldquo;args&rdquo;).From(&ldquo;cxt:runner.Args&rdquo;).
+        Does(fmt.Printf, &ldquo;_&rdquo;).
+            Using(&ldquo;format&rdquo;).WithDefault(&ldquo;%s %s!\n&rdquo;).
+            Using(&ldquo;0&rdquo;).From(&ldquo;cxt:s&rdquo;).
+            Using(&ldquo;1&rdquo;).From(&ldquo;cxt:a&rdquo;)</p>
+
+<p>这里没有了之前的设置subcommand.WithDefault的true。而是通过移动参数的形式。
+go run main.go -a matt hello -s hi
+这样会给os.Args设置成这样：[]string{ &ldquo;-a&rdquo;, &ldquo;matt&rdquo;, &ldquo;hello&rdquo;, &ldquo;-s&rdquo;, &ldquo;hi&rdquo;}
+当程序第一次跑的时候，会把global flags提取出来，把剩余的放入runner.Args。类似于cxt.Put(&ldquo;runner.Args&rdquo;, []string{&ldquo;hello&rdquo;, &ldquo;-s&rdquo;, &ldquo;hi&rdquo;})，但是，当hello command run的时候，我们希望获得他自己的flag，但是hello却是第一个参数，所以，我们要把这个移动一下，就有了那个cli.ShiftArgs，那段代码的意思就是，把第一个参数放入cmd，剩下的参数放入到cxt:runner.Args，接下来的就和上个实现基本一致了。这个方法即可以用来调试，又可以用来定义更多的参数。</p>
+</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Sep 18th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
+
+</div>
+	
+</div>
+</article>
+
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
+		
+		
+		<a class="addthis_button_tweet"></a>
+		
+		
+		
+	</div>
+	
+</div>
+
+
+</div>
+	<footer id="footer" class="inner">Copyright &copy; 2015
+
+    monkey-H
+
+<p>
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+<span id="busuanzi_container_site_uv">
+    本站总访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+</p>
+</footer>
+	<script src="/javascripts/slash.js"></script>
+<script src="/javascripts/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+	$('.fancybox').fancybox();
+})(jQuery);
+</script> <!-- Delete or comment this line to disable Fancybox -->
+
+
+
+
+
+
+</body>
+</html>

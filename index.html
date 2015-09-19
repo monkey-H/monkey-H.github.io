@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content=" 写在前面 又开始看代码了，NAP的编程进入了细节化阶段，不能再闭门造车了，看看deis的代码，看看别人是怎么做的。首先，要学习一下go语言是怎么用的。 继续阅读; Sep 7th, 2015 deis源码解读 ">
+	<meta name="description" content=" 写在前面 反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。 继续阅读; Sep 18th, 2015 deis源码解读 ">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -74,6 +74,80 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/deis-4/">
+		
+			Deis源码解读-deis基本组件-builder</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。</p>
+
+
+		
+		<a href="/blog/deis-4/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Sep 18th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/deis-3/">
+		
+			Deis源码解读-deis基本组件</a>
+	</h2>
+	<div class="entry-content">
+		<h3>deis基本组件</h3>
+
+<p>这一篇文章开始，开始阅读deis源码。首先，介绍一下deis按照构架的基本组件。</p>
+
+
+		
+		<a href="/blog/deis-3/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Sep 18th, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
+
+</div>
+	
+</div>
+</article>
 
 
     <article class="post">
@@ -356,80 +430,6 @@ Jun 17th, 2015</div>
 
 
 Jun 15th, 2015</div>
-	<div class="tags">
-
-
-	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
-
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/my-paas-9/">
-		
-			设计自己的paas平台nap 9&#8212;-统一paas平台入口</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>一个好的paas平台，并不只是提供了牛逼的功能，还在于好的交互。我们之前都是追求功能的完整性，在大体框架完成的时候，我们需要的还有较好的编程风格和交互，所以我们花一些时间思考一下关于同意paas平台入口的问题，这样，对于规范之后平台的开发，web manager管理界面的开发，都有很大的帮助。</p>
-
-
-		
-		<a href="/blog/my-paas-9/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Jun 15th, 2015</div>
-	<div class="tags">
-
-
-	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
-
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/my-paas-8/">
-		
-			设计自己的paas平台nap 8&#8212;-支持mpi应用</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>之前我们已经实现了Dockerfile应用，maven应用的支持，现在，我们要加入另外一种类型，这种类型和之前的两种都不一样，这种应用和之前的应用的最大区别在于，这种类型的应用，并不是一个容器就可以完成的，需要多个容器配合，mpi和mapreduce应用就是这样，他们需要master slave节点，共同协作完成一件任务。我们这里先介绍mpi应用的设计，后面再介绍mapreduce应用的支持实现。</p>
-
-
-		
-		<a href="/blog/my-paas-8/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Jun 10th, 2015</div>
 	<div class="tags">
 
 
