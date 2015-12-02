@@ -1,0 +1,51 @@
+---
+layout: post
+title: "设计自己的paas平台nap 12----数据库服务设计"
+date: 2015-07-22 09:37:43 +0800
+comments: true
+categories: nap平台
+---
+###写在前面
+如果每次获取用户的部署的应用的信息，都需要使用fleet提供的接口进行一定的计算，甚至需要使用一些不友好的方式，比如使用ls来查看有多少个目录，就认为有多少个应用等方式的话，这样是非常的不美观的。我们需要增加一个数据库的组件，用来存储相应的信息，每次需要的时候，就从这里面读取，这样才是正统的设计方式。我们采用mysql来实现数据库服务。
+<!--more-->
+
+###数据库服务设计
+首先，我们存储了两张表格。一张用来存储service，另外一张用来存储app。名字就用这两个单词来命名。那么，我们都需要存储哪些信息呢？
+对于service而言，我们需要知道这个service的名字，种类（mpi，mapreduce，profile等），如果是mpi或者mapreduce，还需要知道slave节点的个数。service的url，可以调节的参数，和已经部署运行的实例的个数，最后，我们要知道这个service是属于哪一个用户的，这个也很重要。
+对于app而言，我们要知道这个app的名字，ip，port（对外界暴露的端口），boxport(使用shellinabox技术，需要知道暴露的端口)，启动命令（这个对以后启动应用很有用），最后就是这个app属于哪一个service。
+
+| name | kind | slave_num | url | parameters | instance_num | fathername |
+|:----:|:----:|:---------:|:---:|:----------:|:------------:|:----------:|
+|monkey_dockerfile|dockerfile|0|github.com|arg1#arg2|0|monkey|
+
+| name | ip | boxport | port | command | fathername |
+|:----:|:--:|:-------:|:----:|:-------:|:----------:|
+|monkey_dockerfile_1|114.212.189.140|14596|14594#14595|python start.py|monkey_dockerfile|
+
+当然，有了这些还不够，我们还需要有对应于数据库的一些操作的封装和实现。文件命名为mysql_treat。
+
+刚开始，我们的思路是这样的，我们包含了以下一些基本的操作，实现对数据的每个部分的读取和设置。
+注意，servicename,appname包含了username
+
+- get_servicename_list(username) 返回用户服务列表
+- get_kind(servicename)返回服务的种类
+- set_kind(servicename, value)
+- get_slave_num(servicename)
+- get_url(servicename)
+- get_parameters(servicename)
+- get_instance_num(servicename)
+
+- get_appname_list(servicename)
+- get_port(appname)
+- get_ip(appname)
+- get_command(app_name)
+
+
+但是，后来我们发现，这些函数完全没必要命名的这么奇怪，这样会让编程人员记忆起来非常麻烦，我们可以只实现三个函数，但是这三个函数可以实现上面所有的功能。
+- set_value(table, column, value, servicename_or_appname)
+- get_value(table, column, servicename_or_appname)
+- get_list(table, username_or_servicename)
+
+还是编程经验少，如果多了，应该一开始就想到这种设计方法。
+
+

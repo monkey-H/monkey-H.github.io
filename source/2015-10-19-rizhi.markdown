@@ -1,0 +1,535 @@
+---
+layout: post
+title: "日志from10-19"
+date: 2015-10-19 09:34:18 +0800
+comments: true
+categories: 日志
+---
+
+10-19
+###起床后（7：30-8：00）
+早上看了一下树的中序前序后续的非递归算法。注意中序的非递归是比较容易的，前序和后续比较麻烦，有时间要把算法实现一下。
+还有并查集以及他的应用，等价类，很有意思的一个数据结构。
+
+###上午（9：00-11：30）
+想法是修改nap的mapreduce程序，适配到容器里。
+
+基本完成，下午调试一下。
+
+###下午（2：00-5：30）
+调试上午的mapreduce部分，基本完成，不过在其中遇到了一些其他的问题。
+
+nap-vagrant 里面有没有添加config.rb文件。
+nap-vagrant 里面的id-rsa key的权限不对，需要修改为chmod 700 id-rsa
+
+140机器，启动不了容器。错误： Error response from daemon: Cannot start container /sys/fs/cgroup/cpuset/system.slice/docker-... no space left device
+解决：查看df -h df -i都没有满
+网上的解决办法：echo 0 > /sys/fs/cgroup/cpuset/system.slice/cpuset.mems 但是权限不够，不能对其进行读写。忘记尝试sudo su之后进行读写。然后重启机器，出现了别的问题。https://github.com/coreos/rkt/issues/1210有解答。
+
+重启机器，https://github.com/coreos/etcd/issues/3711 问题描述在这里。作者说是etcd版本中的一个bug，推荐升级。
+
+10-20
+###起床
+看了一下字典和跳表。字典就是一个排好序的列表，跳表是用跳跃着来查找数据，查找复杂度到log(n)，但是其建立表格的时间较麻烦，用处不是很大。适合较少插入的数据。
+
+###上午
+集群已经崩掉了，干脆在上面尝试着手动建立etcd集群。
+脚本
+
+etcd2 -name infra0 -initial-advertise-peer-urls http://114.212.189.136:2480   -listen-peer-urls http://114.212.189.136:2480   -listen-client-urls http://114.212.189.136:2479,http://127.0.0.1:2479   -advertise-client-urls http://114.212.189.136:2479   -initial-cluster-token etcd-cluster-1   -initial-cluster infra0=http://114.212.189.136:2480,infra1=http://114.212.189.140:2480,infra2=http://114.212.189.147:2480   -initial-cluster-state new
+
+etcd2 -name infra1 -initial-advertise-peer-urls http://114.212.189.140:2480   -listen-peer-urls http://114.212.189.140:2480   -listen-client-urls http://114.212.189.140:2479,http://127.0.0.1:2479   -advertise-client-urls http://114.212.189.140:2479   -initial-cluster-token etcd-cluster-1   -initial-cluster infra0=http://114.212.189.136:2480,infra1=http://114.212.189.140:2480,infra2=http://114.212.189.147:2480   -initial-cluster-state new
+
+etcd2 -name infra2 -initial-advertise-peer-urls http://114.212.189.147:2480   -listen-peer-urls http://114.212.189.147:2480   -listen-client-urls http://114.212.189.147:2479,http://127.0.0.1:2479   -advertise-client-urls http://114.212.189.147:2479   -initial-cluster-token etcd-cluster-1   -initial-cluster infra0=http://114.212.189.136:2480,infra1=http://114.212.189.140:2480,infra2=http://114.212.189.147:2480   -initial-cluster-state new
+
+报错rafthttp: fail to find sender 7exxxxx path message 7exxxxxcannot be parsed
+
+发现，7exxx是147机器，而147机器有外网，曾经重启过，coreos自动更新，etcd版本不一致。没有成功。准备只用两台机器试试。
+
+貌似成功了，我也不知道。他们都选举出来了一个leader，然后开始把自己的信息填入到cluster里面去。但是一直卡在这个填入信息的地方，不知道成功了没有。
+
+然后就开会，浪费时间。
+
+###下午
+尝试用virtualbox搭建几个coreos系统，尝试一下，没问题再次在服务器上安装。
+
+搭建tomcat，配置，发现源有问题，换源。
+使用etcd2来安装coreos集群，和之前有点不一样，需要尝试一些东西。
+和units同级的是不是参数？在etcd.service里面修改。
+
+配置java环境。
+运行tomcat
+start 成功，但是404页面 下载的源码，换个非源码
+
+用virtualbox来模拟安装coreos集群。
+
+etcd2无服务，coreos iso镜像太低，换。
+gpg no public key，修改coreos-install，注释这一段
+
+
+10-21
+###早上 
+没起来
+
+###上午
+用的台式机上安装virtualbox虚拟机的方式来安装coreos系统，有点问题。网络连接方式
+用桥接的方式，发现，在预安装那里，还是可以的，但是，重启机器之后，虽然ip设置正确，但是，ping不通。决定直接在实体机上安装。
+
+###下午
+下午发现，安装起来的coreos集群并没有成功安装etcd2，估计是cloud config写的不对。在重写cloud config之前，我准备试一下，手动配置etcd2，但是，即使成功了，还是要重装coreos集群，用cloud config来装，否则，机器停电重启的时候，会很麻烦。
+
+尝试了，但是不知道成功了没有啊
+2015/10/21 06:50:41 raft: raft.node: 7e3a271660ce8c10 elected leader 81bbb2f65d655902 at term 10
+2015/10/21 06:50:41 etcdserver: set the initial cluster version to 2.0.0
+2015/10/21 06:50:41 etcdserver: published {Name:infra2 ClientURLs:[http://114.212.189.147:2479]} to cluster db50e057d9b96ce
+2015/10/21 06:50:43 etcdserver: updated the cluster version from 2.0.0 to 2.1.0
+
+看着是成功的选取了一个leader，也说把clienturl published to cluster 但是，就卡在这个地方，怎么知道成功失败啊。
+成功了
+core@coreos3 ~/infra2.etcd/member/wal $ curl -L http://127.0.0.1:2479/v2/members
+{"members":[{"id":"7e3a271660ce8c10","name":"infra2","peerURLs":["http://114.212.189.147:2480"],"clientURLs":["http://114.212.189.147:2479"]},{"id":"81bbb2f65d655902","name":"infra0","peerURLs":["http://114.212.189.136:2480"],"clientURLs":["http://114.212.189.136:2479"]},{"id":"898c6def0b86466c","name":"infra1","peerURLs":["http://114.212.189.140:2480"],"clientURLs":["http://114.212.189.140:2479"]}]}
+
+
+再次修改cloud config，准备重装系统，遇到问题
+
+chrome下载的viewer.jnlp下载不下来，屏蔽。您计算机的安全设置阻止了此文件。
+换个浏览器
+
+cannot fetch cluster info from peer urls: could not retrieve cluster information from the given urls
+
+get cluster response from http://114.212.189.140:2380: Get http://114.212.189.140:2380/members: read tcp 114.212.189.140:2380: use of closed network connectio
+get cluster response from http://114.212.189.147:2380: Get http://114.212.189.147:2380/members: read tcp 114.212.189.147:2380: use of closed network connectio
+tening for client requests on http://0.0.0.0:4001
+tening for client requests on http://0.0.0.0:2379
+tening for peers on http://0.0.0.0:7001
+tening for peers on http://0.0.0.0:2380
+ cluster info from peer urls: could not retrieve cluster information from the given urls
+ 
+cloudconfig不对，换种方式，先在这三台装好coreos的机器上，写etcd2.service，成功了，再往cloud config里面写。
+
+可以修改cloud config，然后coreos-cloudinit --from-file这样也是可以的，不用每次都重装系统。
+
+flannel 支持的是etcd，不是etcd2，难道版本不一致？
+查看flannel的日志
+Oct 21 11:41:45 coreos1 flanneld[4101]: E1021 11:41:45.328047 04101 main.go:170] Failed to create SubnetManager: Get http://127.0.0.1:4001/v2/keys/coreos.com/network/config?consistent=true&recursive=false&sorted=false: dial tcp 127.0.0.1:4001: connection refused
+发现询问的是4001端口，这是etcd的，etcd2的是2379端口。
+两种解决办法，改变etcd2的端口或者看看flannel有没有更新。
+flannel有参数列表 --etcd-endpoints=http://127.0.0.1:2379
+
+11-4
+
+中间差了两个礼拜，家中有点事情，耽误了。
+
+上午：
+先把nap启动起来。
+
+docker0 通flannel0相同，但是启动的容器的ip没有使用docker0的ip。 重启docker服务
+
+下午：
+查看compose文档。
+docker-compose.yml文件中，必须有一个build或者image参数，并且两者不可以同时出现，其余的参数无所谓。
+build: docker build image的路径。
+container_name: 默认是随机的container name，这里可以指定名字。
+
+安装docker compose，error，用curl安装的时候，没有替换version num。
+
+把why的应用转换为compose文件。
+
+11-5
+上午：
+docker remote api。
+修改服务器docker配置文件，docker_opts里面添加-H 0.0.0.0：2376 -H unix:///var/run/docker.sock
+
+客户端，安装docker-py。
+
+1：docker_create.py
+
+from docker import Client
+
+cli = Client(base_url='114.212.87.52:2376')
+container = cli.create_container(image='docker.iwanna.xyz:5000/hmonkey/busybox', command='/bin/sleep 30')
+print(container)
+
+sudo python docker_create.py 
+docker.errors.APIError: 400 Client Error: Bad Request ("client is newer than server (client API version: 1.20, server API version: 1.19)"
+加上version='1.19'
+
+2：注意python和python3
+
+3：不要通过python ssh到宿主机上进行修改宿主机上的文件，不管是本身的文件，还是用来挂载container的文件，而是通过docker remote api来做。
+
+4：读了compose的代码，compose并不是直接和dockerd交互，而是通过docker client来进行交互。
+
+下午：
+1. 把slave的docker engine准备好，开启远程api访问
+
+2. 完成用刚才给你们看的docker api client（go）调用docker engine ，实现容器的start／stop等
+
+3. 编写简单的代码，基于api client完成张营之前手工做的一个应用的部署过程
+
+11-6
+上午：
+继续读compose的代码，修改command.py里面的get_project里面的client客户端。
+
+修改了代码，怎么安装运行呢？
+跪谢安大哥。
+python setup.py install
+
+pip安装，找官网，有个get-pip.py，不要找google上的乱七八糟的教程。
+
+现在实现了，可以通过在客户端compose up，在远程启动一个容器。
+但是，这个远程服务器端是在刚开始就确定好的，一个compose.yml文件，只能用一个远程服务器，想办法把它修改了。
+
+下午：
+sudo python setup.py install的时候，报错。
+Traceback (most recent call last):
+  File "setup.py", line 11, in <module>
+    from setuptools import find_packages
+  File "/usr/local/lib/python2.7/dist-packages/setuptools/__init__.py", line 12, in <module>
+    from setuptools.extension import Extension
+  File "/usr/local/lib/python2.7/dist-packages/setuptools/extension.py", line 8, in <module>
+    from .dist import _get_unpatched
+  File "/usr/local/lib/python2.7/dist-packages/setuptools/dist.py", line 21, in <module>
+    packaging = pkg_resources.packaging
+AttributeError: 'module' object has no attribute 'packaging'
+
+删除 /usr/lib/python2.7/dist-lackages/pkg_resources.py 和 /usr/lib/python2.7/dist-lackages/pkg_resources.pyc
+就可以了。
+
+11-17
+
+virtualbox snapshot
+网卡，一个NAT网络，一个hostonly，分别对应vagrant的public和private网络。
+
+修改/etc/network/interface
+不按照gui的方式获取ip，而是通过这个文件
+auto lo
+inace lo inet loopback
+//好像是一个回路，具体搞不懂
+
+auto enp0s3 #网卡
+iface enp0s3 inet dhcp #自动获取ip地址
+
+dns-nameservers 10.0.2.1
+
+auto enp0s8
+iface enp0s8 inet dhcp
+
+sudo visudo 修改权限，可以使得不输入密码
+Allow members of group sudo to execute any command
+%sudo ALL=(ALL:ALL) NOPASSWD: ALL
+
+搭建docker network环境，尝试overlay网络
+
+搭建consul的服务主节点。
+docker run -d \
+    -p "8500:8500" \
+    -h "consul" \
+    progrium/consul -server -bootstrap
+
+
+修改要连接的机器的docker参数，
+sudo docker daemon --cluster-store=cosul://master ip:8500 --cluster-advertise=enp0s8:2376 &
+
+注意机器的hostname不能一样，否则consul集群建立不起来。
+sudo vim /etc/hostname 然后重启机器
+注意修改/etc/hosts里面的名字（否则出现 unable to resolve host）
+
+11-18
+启动一个集群。
+结构：主机上起了两个虚拟机，都安装了docker
+主机上：docker run -p "8500:8500" -h "consul" progrium/consul -server -bootstrap
+
+虚拟机上，修改docker.service
+sudo cp /lib/systemd/system/docker.service /etc/systemd/system/
+cd /etc/systemd/system
+sudo vim docker.service
+docker daemon --cluster-store=consul://master ip:8500 --cluster-advertise=enp0s8:2376 --insecure-registry docker.iwanna.xyz:5000 -H 0.0.0.0:2376 -H unix:///var/run/docker.sock -H fd://
+
+sudo systemctl stop docker.service
+sudo systemctl daemon-reload
+sudo systemctl start docker.service
+
+docker network create test
+docker run -tid --name c1 --net=test busybox 
+这样就成功了。
+
+要用nap-compose，注意link那一部分有一个ssh到服务器的部分，所以，要修改虚拟机中的root密码。
+sudo passwd 
+monkey
+monkey
+
+cd /root
+cp /home/monkey/.ssh/authorized_keys /root/.ssh
+
+安装python 的一个moudule， MySQLdb
+
+sudo apt-get install python-setuptools libmysqld-dev libmysqlclient-dev python-dev 
+sudo pip install mysql-python
+
+dockerhub上有mysql的官方镜像。
+docker pull mysql
+docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=monkey -d mysql
+
+一个用户一个数据库，用户名和密码都是用户名
+在mysql上先用root登陆
+mysql -uroot -p
+create database monkey;
+create user 'monkey'@'%' identified by 'monkey';
+grant all on monkey.* to 'monkey'@'%';
+这个时候，用户monkey就只能访问其中的monkey这个database了，而且不能新建数据库。
+
+对用户monkey，新建三个表格，一个是用来存储用户信息，包括名字，overlay的网络的名字等。一个用来存储起来的应用，一个是针对这个应用的容器。
+
+create table info(name char(20) not null primary key, net char(20) not null);
+insert into info(name, net) values('monkey', 'monkey');
+
+然后，就可以从mysql数据库获得overlay net的信息。
+
+db = MySQLdb.connect("192.168.56.103（主机地址）", "monkey（用户名）", "monkey（密码）", "monkey(数据库)")
+cursor = db.cursor()
+
+cursor.execute("select net from info where name='monkey'")
+data = cursor.fetchone()
+netname = data[0]
+
+overlay有一个bug。
+创建一个overlay网络
+跑一个容器，用这个overlay网络
+kill这个容器，并且删除他
+然后就发现，删除不了这个overlay了
+
+11-19
+不能为虚拟电脑打开一个新任务
+sudo /etc/init.d/vboxdrv setup
+感觉重新编译了virtualbox的kernel
+
+未能启动虚拟电脑，由于下述物理网卡没有找到
+
+看起来是hostonly那个网卡没有找到，在virtualbox的管理-》全局设定-》网络里面，hostonly里面添加一张网卡。就好了
+
+搭建moosefs
+docker pull docker.iwanna.xyz:5000/hmonkey/moosefs_master:v1
+docker pull docker.iwanna.xyz:5000/hmonkey/moosefs_chunkserver:v1
+docker pull docker.iwanna.xyz:5000/hmonkey/moosefs_metalogger:v1
+
+cd /var
+sudo mkdir data
+
+docker network create -d overlay moosefs
+
+docker run -d --name mfsmaster --net=moosefs docker.iwanna.xyz:5000/hmonkey/moosefs_master:v1 /usr/sbin/sshd -D
+docker run -d -v /var/data:/moosefs --name chunkserver --net=moosefs docker.iwanna.xyz:5000/hmonkey/moosefs_chunkserver:v1 /usr/sbin/sshd -D
+docker run -d --name metalogger --net=moosefs docker.iwanna.xyz:5000/hmonkey/moosefs_metalogger:v1 /usr/sbin/sshd -D
+
+docker exec -ti mfsmaster bash
+echo "10.0.1.2    mfsmaster" >> /etc/hosts
+/etc/init.d/moosefs-master start
+
+docker exec -ti chunkserver bash
+chown -R mfs:mfs /moosefs
+/etc/init.d/moosefs-chunkserver start
+
+Q: hdd space manager: chunkserver without meta id shouldn't use drive with defined meta id(file: /moosefs/.metaid) use '!' in drive definition to ignore this
+A: sudo rm /moosefs/.lock 
+sudo rm /mooosefs/.metaid
+
+Q: fuse: failed to open /dev/fuse: operation not permitted
+error in fuse_mount
+A: container启动的时候，需要--privileged参数为true
+
+11-20
+本来的想法是，一些基础服务有一个专门的overlay网络，比如moosefs，mysql数据库等。然后，把服务要暴露的端口给宿主机，然后别的东西通过这个端口来访问。moosefs也一样，只不过，针对每一个用户，都有一个数据库卷跑在这个网络里，然后，在每个主机上都有一个这个数据卷容器，用户的应用容器，不管跑在哪一个主机上，都直接通过volumes-from参数来挂载这个数据卷容器。但是遇到了一些问题。
+
+数据卷容器是通过nfs来挂载moosefs的，而我们的容器挂载数据卷之后，发现并不能更新。也就是说，nfs挂载的东西，并没有映射到主机目录上。
+
+11-23
+
+安装zsh 
+sudo apt-get install zsh
+sudo apt-get install git
+sudo curl -L http://install.ohmyz.sh | sh
+
+Q: Password: chsh: PAM: Authentication failure
+A: rm -rf ~/.oh-my-zsh
+curl -L http://install.ohmyz.sh > install.sh
+sh install.sh
+
+切换到默认sh
+chsh -s $(which zsh) $(whoami)
+
+moosefs不支持在ubuntu15上安装，还是需要14.04
+
+
+11-24
+
+安装ubuntu 14.04的virtualbox 基础snapshot
+
+1：从紫荆上下载14.04的iso文件
+2：virtualbox安装，注意，网络模式两个，一个是nat网络，一个是hostonly。
+3：安装docker 修改sudo visudo ，修改docker不需要输入sudo 安装vim openssh， rsa key
+4：安装moosefs-client
+
+启动起立的集群，别忘了修改hostname
+
+Q: 修改docker参数的时候，cannot find any sock
+A: 把-H fd://去掉
+
+host模式的moosefs
+docker pull
+
+docker run -tid --name chunkserver -v /data:/moosefs --net=host chunkserver bash
+docker run -tid --name mfs_master --net=host master bash
+
+同样的，在master里面，修改hosts文件，启动mfs进程
+chunkserver里面，修改hosts文件，chown moosefs文件夹权限，启动mfs
+
+然后，在虚拟机里面，创建volum_data文件夹，挂载moosefs
+sudo mkdir /volumes_data
+cd /volumes_data
+sudo mkdir /monkey #以用户为单位
+mfsmount monkey -H mfsmaster
+在不同的虚拟机上挂载，并且测试，可以。
+
+(这里可以修改一下，在volume_data里面挂载mfs，然后数据卷关在子目录，我特么太聪明了。)
+
+接着，启动一个数据卷容器，挂载那个目录。
+docker run -d --name monkey_volume -v /volume_data/monkey/:/data busybox
+
+这个容器不一定在运行。
+
+然后，这个容器就成为了数据卷容器。
+
+python restful api
+
+使用flask来实现
+制作flask的镜像。
+
+FROM ubuntu
+MAINTAINER hmonkey
+
+RUN apt-get install python wget
+RUN wget https://bootstrap.pypa.io/get-pip.py
+RUN python get-pip.py
+RUN wget https://pypi.python.org/packages/source/v/virtualenv/virtualenv-13.1.2.tar.gz#md5=b989598f068d64b32dead530eb25589a
+RUN tar zxvf virtualenv-13.1.2.tar.gz
+RUN cd virtualenv-13.1.2
+RUN sudo python setup.py install
+RUN virtualenv flask
+RUN flask/bin/pip install flask
+
+Q: cannot start container xxx: subnet sandbox join failed for "10.0.0.0/24": vxlan interface creation failed for subnet "10.0.0.0/24" failed in prefunc: failed to set namespace on link "vxlan328ca69" :invalid argument
+A:
+docker network 需要kernel版本高于3.16
+
+docker network 需要kernel版本大于3.16
+moosefs的版本只适合14.04
+14.04的版本的kernel最高3.13
+卧槽了
+
+貌似14.04可以支持更高版本的内核。
+cd /tmp
+wget xxx
+wget xxx
+wget xxx
+
+sudo dpkg -i linux*
+
+xxx是来自于kernel.ubuntu.com/~kernel-ppa/mainline这里面的内核版本，其中有三个需要下载
+分别是linux-headers-xxx-generic_amd64.deb
+linux-headers-xxx_all.deb
+linux-image-xxx_amd64.deb
+然后重启。
+
+11-25
+卧槽，虽然装了内核，但是好像aufs没有装上。默认的docker是使用的aufs，但是升级内核的时候，少了一个包，linux-image-extra，但是我尝试了，没有成功。导致docker daemon启动不起来。
+error starting daemon error initializing graphdriver driver not supported
+
+不行了，搞了半天都没弄好，先写点有意思的。
+
+思路，用15.10来跑，虽然不能有moosefs，我们就暂时抛弃那一块。
+虚拟环境搭建起来。
+搭建mysql
+
+create table info(name char(50) not null, net char(50), volume char(50));
+create table machine(id int unsigned not null, ip char(50));
+create table project(id int unsigned not null auto_increment primary key, name char(50), url char(50));
+create table service(name char(50), machine int unsgined, project char(50));
+
+info表
+|name | net | volume|
+|monkey| monkey | monkey_volume|
+
+machine表
+|id|ip|
+|0|192.168.56.107:2376|
+
+service表
+|name|machine|project|
+|web|0|web_db
+
+project表
+|id|name|url|
+
+11-27
+at some point I must have updated the kernel when installing packages. The related linux-image-extra-* package wasn't automatically installed with it so on reboot I no longer had the aufs module.
+sudo apt-get install linux-image-extra-`uname -r`
+sudo modprobe aufs
+
+换一种升级系统的方式
+sudo apt-get install linux-image-3.19.0-33-generic
+sudo apt-get install linux-image-extra-`uname -r`
+
+
+删除一个用户
+drop user user_name;
+drop database user_name;
+flush privileges;
+
+
+12-2
+python command line scripts
+这个东西的作用简单来说，就是把一个python项目，转换成一个二进制文件，可执行的那种。有两种方式可以做到。
+setuptools.setup()
+scripts console_scripts entry point
+
+python packaging
+```
+funniest/
+    funniest/
+        __init__.py
+    setup.py
+```
+目录结构应该是这样。然后在__init__.py里面有个函数
+```
+def joke():
+    return (u'Wenn ist das Nunst\u00fcck git und Slotermeyer? Ja! ... '
+            u'Beiherhund das Oder die Flipperwaldt gersput.')
+```
+setup.py中应该有这样的一个引用了setuptools
+```
+from setuptools import setup
+
+setup(name='funniest',
+      version='0.1',
+      description='The funniest joke in the world',
+      url='http://github.com/storborg/funniest',
+      author='Flying Circus',
+      author_email='flyingcircus@example.com',
+      license='MIT',
+      packages=['funniest'],
+      zip_safe=False)
+```
+然后，就可以通过
+`python setup.py install`
+这样，在这个机器上的所有project，都可以通过
+```
+import funniest
+print funniest.joke()
+```
+如果source包里面有东西改变了，可以通过
+`python setup.py develop`
+这样来更新
+
+当然，这样只能在本机上使用，如果想让别人也可以使用（通过esay_install funniest），就需要发布到PyPI上去，这里就不说了，反正暂时我不会发布上去。
+

@@ -1,0 +1,39 @@
+---
+layout: post
+title: "Deis源码解读-deis基本组件"
+date: 2015-09-18 11:08:53 +0800
+comments: true
+categories: deis源码解读
+---
+
+###deis基本组件
+这一篇文章开始，开始阅读deis源码。首先，介绍一下deis按照构架的基本组件。
+
+<!--more-->
+
+####controller
+controller组件是一个http 的api server，和我之前写的nap的controller组件类似，是一个控制组件，用来控制整个平台的工作流。但是controller组件包含了nap controller组件没有的功能，也就是nap平台fleet的功能。用来决定容器跑在什么位置上的功能，叫做schedule。deis的command line就是和这个controller组件进行交互的。
+
+####database
+顾名思义，数据库组件，deis用的PostgreSQL数据库，这个组件用来存储deis的一些持久的平台信息，备份和WAL（预写日志 write-ahead logging）日志信息，也存在这个地方。
+
+####builder
+builder组件用git服务器来处理应用build过程。包括通过ssh发送过来的git push请求，验证ssh key fingerprint，验证是否有些权限，从更新过的git repository中，build 一个新的docker image，增加最后的config信息到docker image，push image到registry，通过controller触发一个新的release。
+
+####registry
+用来存储docker images的组件，至于image data信息是存储在store中的。
+
+####logspout
+这是他们做好的一个容器，专门用来收集每个coreos主机上所有的容器的日志信息（第一线程）。所以，集群中所有的coreos主机，都要有logspout这个组件。logspout这个组件会把日志信息发送到logger组件。
+
+####logger
+logger组件是一个syslog 服务器，用来收录logspout从整个集群中发送过来的日志信息。controller会查看这些信息。
+
+####publisher
+这是一个比较小的组件，用来发布container的信息到etcd，这样，router组件才会知道这些信息。
+
+####router
+router组件通过nginx，来路由traffic到应用容器。
+
+####store
+这个组件也是用来存储信息的。

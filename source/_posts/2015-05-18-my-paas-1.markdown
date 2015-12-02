@@ -3,7 +3,7 @@ layout: post
 title: "设计自己的paas平台nap 1----背景知识"
 date: 2015-05-18 14:49:52 +0800
 comments: true
-categories: 
+categories: nap平台
 ---
 
 ###写在前面

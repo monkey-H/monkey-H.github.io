@@ -1,0 +1,34 @@
+---
+layout: post
+title: "设计自己的paas平台nap 11----mapreduce应用"
+date: 2015-06-17 10:11:07 +0800
+comments: true
+categories: nap平台
+---
+
+###写在前面
+在前面的文章中，我们已经对mpi应用，maven工程应用做了一些介绍，那么转接到先部署，再启动的模式中，也只要对其有些修改即可，总体的设计理念是没有变化的。但是，我们现在要介绍的这个mapreduce应用却不是这样。mapreduce应用和mpi应用都属于多个容器支撑的应用，但是，mapreduce和mpi最大的不同是，mpi应用，只需要master节点知道所有的slave节点的ip地址即可。但是，mapreduce需要所有的节点，都知道其他节点的ip地址信息，这是一个很大的难点，我们接下来会详细叙述。
+<!--more-->
+###nap平台mapreduce应用设计分析
+在我看来，mapreduce应用的支撑设计，应该包括四个阶段。
+- 跑起来masters,slaves
+- 获取到这些masters，slaves的ip地址。
+- 把这些ip地址都写入到masters和slaves中去。
+- 让masters跑要跑的命令。
+
+接下来，我们一条一条的说。
+
+####启动masters和slaves
+这一条和之前设计的启动mpi的master和slave是一样的。通过一个unit启动master和slave，然后通过discovery来发现启动的容器的端口号等信息，并且写入到etcd中去，为下一步做打算。
+
+####获取ip信息
+这一条也比较简单，前面已经把这些容器的ip信息都写入到了etcd中，所以，只要去etcd中去读取，并且记录下来就可以了。
+
+####写入ip信息到master，slave中
+这一步其实是很有难点的。我们如何把这些ip信息写入到已经跑起来的容器中呢？虽然fleetctl ssh可以进入到一个容器中，但是，在bash命令中，那相当于重启了一个终端，如何把在这个终端中写入东西？我是一个bash新手，不会。但是我在想，是不是有一种重定向的设定，可以在里面写入命令。我之后会尝试查找这方面的内容，但是现在，我想到了另一种，虽然比较麻烦，但是感觉更加正确的方法。我用一个可以无密码登陆到master和slave的容器，这个容器就干一件事，把master和slave节点信息文件，scp到master和slave节点上去。
+
+####让masters跑命令
+这也是一个难点。我们都知道docker logs只能输出第一线程的日志，我们这里跑起来master，slave的时候，已经不是第一线程了，所以，我们这里已经失去了一个最简单的获取日志的方式，但是我突然想到fleetctl journal和fleetctl cat的不同，好像这个可以解决。继续回到如何让master跑命令的问题，像上一个问题一样，我们不可能用docker exec -ti container /bin/bash这样，进去去执行，但是，我也希望通过上面的方法来解决这个问题。用一个可以无密码登陆到master节点上的container，这个container通过ssh的方式，使master运行需要运行的命令。
+
+####总结
+好了，该说的都说了，继续实践。如果有问题，这里会继续补充。代码部分在github.com/monkey-h/nap

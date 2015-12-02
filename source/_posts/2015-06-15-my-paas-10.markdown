@@ -3,11 +3,11 @@ layout: post
 title: "设计自己的pass平台nap 10----统一接口规范"
 date: 2015-06-15 21:18:17 +0800
 comments: true
-categories: 
+categories: nap平台
 ---
 
 ###写在前面
-在理解了dokku，dokku-alt的基础上，我们设计自己的paas平台。我们的终极目标是在一个集群环境中设计一个paas平台，dokku只是单机环境下，为了我们的终极目标，我们最终选择的paas的底层平台是coreos集群环境。这几篇blog只是我们不断进行尝试的日志，并不是一个完整的教程，等我们最终搭建好了，可能会写一个完整的教程，但那都是后话。
+继续探讨一些统一接口，列出统一接口的名称，使用方法，和每个接口的功能。并通过大体流程的描述，详细叙述每个接口的功能。并把这篇文章最为web manager管理界面开发的时候参考的主要接口文档。
 <!--more-->
 ###nap统一接口
 统一接口的一部分，想到其余的，再补。（注意这里的service和app是等同的，nap中跑的应用的命名规范为username_appname_mpi_master.service或者username_appname_mpi_slave@%i.service或者username_appname_common@%i.service）

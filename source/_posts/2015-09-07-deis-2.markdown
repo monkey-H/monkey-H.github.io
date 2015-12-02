@@ -1,0 +1,78 @@
+---
+layout: post
+title: "deis源码解读-go语言学习2"
+date: 2015-09-07 14:32:41 +0800
+comments: true
+categories: deis源码解读
+---
+
+####写在前面
+又开始看代码了，NAP的编程进入了细节化阶段，不能再闭门造车了，看看deis的代码，看看别人是怎么做的。首先，要学习一下go语言是怎么用的。
+<!--more-->
+
+####go语言 复杂类型 方法 接口
++ go语言中也存在指针类型，其声明方式是p := &i 或者 var p *int这样，注意，go语言中没有指针运算。
++ 结构体就是一个字段的集合。
+type Vertex struct {
+	X int
+	Y int
+}
+func main() {
+	fmt.Println(Vertex{1, 2})
+    v := Vertex{1,2}
+    v.X = 4
+    p := &v
+    p.Y = 3
+}
+打印出来的是{1 2}
++ 结构体初始化的时候，可以通过{X:1, Y:2}这种方式初始化，如果省略了其中一个，比如Y，就是初始化的零值。
++ 数组 var a [2]string a[0]
++ 切片slice。s := []int{2,3,4,5} 可以通过这种方式访问，s[1:3], s[:3] s[2:]注意，s[a:b]是从a开始，到b-1结束。
++ slice除了以上面的方式构建，还可以通过make函数构建。a := make([]int, 5)，这个5就是slice的len。slice有两个函数要注意，一是len，一是cap。len(x) cap(x)，len是长度，cap是能够装的个数。make([]int ,0,5)第一个就是len，后一个就是cap。slice定义的时候可以不定义大小，通过append来增加输入。当超过cap的时候，会自动增加大小。
+var a []int
+a = append(a,1)
+a = append(a, 2,3,4)
++ 通过for循环的range格式对slice循环。
+func main(){
+var pow = []int{1,2,3,4,5}
+for i,v := range pow{
+fmt.Printf("%d: %d \n", i,v)
+}
+}
+这里的i，v就是小标和数字。
++ 如果用不到i，就用_来代替。for _, value := range pow
++ map和java的hashmap很像。
+type Vertex struct{
+Lat,Long float64
+}
+var m map [string] Vertex
+m = make(map[string]Vertex)
+m["hello"] = Vertext{
+1.3,2.9
+}
+注意，map在使用之前，必须用make来创建。没有make的map是空的，值为nil，并且不能赋值。
++ 另一种初始化方式。
+var m = map[string]Vertex{
+"hello": Vertex{
+1,2
+},
+"world":Vertex{
+3,4
+},
+}
++ m := make(map[string]int)
+m["hello"]=42
+delete(m, "hello")
+v, ok := m["hello"]判断有没有返回值。如果map中读取某个不存在的键时，结果是map元素类型的零值。
++ go语言中没有类的概念，但是可以在结构体类型上定义方法。比如
+type MyFloat float64
+func (f MyFloat) Abs() float64{
+if f<0 {
+return float(-f)
+}
+return float64(f)
+}
+然后在后面就可以通过f.Abs()来调用。
++ 在结构体类型上定义方法的时候，注意，尽量用指针来做，用指针可以用来修改结构体变量的值，而不用指针的话，修改的只是一个拷贝，所以不会修改原来的值，是没有意义的。
++ go新开启一个线程。
++ channel是有类型的管道，默认情况下，在另一端没有准备好之前，接受都会阻塞，使得goroutine在没有明确的锁或者静态变量的情况下进行同步。不过channel和map和slice一样，都需要用make来创建一下才可以使用。c := make(chan int)后面的int代表之后要送进去的值。c <- sum     x,y := <-c,<-c分别是加入一个值和推出一个值。

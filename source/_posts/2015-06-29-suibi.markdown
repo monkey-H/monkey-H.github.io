@@ -1,0 +1,26 @@
+---
+layout: post
+title: "随笔"
+date: 2015-06-29 12:41:06 +0800
+comments: true
+categories: 
+---
+### Q & A
+实验过程中遇到的问题，与查到的解决办法，记录下来，以备不时之需
+<!--more-->
+###问题与解答
+Q: no journal files were found
+A: fleetctl journal xxx.service不返回日志信息，sudo fleetctl journal xxx.service返回。原因是journal需要在systemd-journal权限组里才可以。但是，由于某些原因，比如网上说的：
+I've finally pinpoint the cause: I'm logging in too early. Somehow, if you login after just few secs from the instantiation of the GCE machine, my user will not be added to the group systemd-journal. Thus, journalctl as normal user returns "No journal files were found", while doing sudo journalctl returns the logs.
+What's worse is that the situation is then permanent: even if I log out, the user will never be added to the group systemd-journal, but I guess I'm in a limit scenario.
+解决办法，
+sudo usermod -a -G systemd-journal bob
+id -a bob
+但是对我没用。有一种简单粗暴的方法。
+在用户目录/var/log/journal/machine-id/路径下
+所有的文件的权限都是root的，改成nap的。
+shdo chown nap ./*
+就可以了。过于残暴，可能会引起某些问题。
+
+Q:coreos 可以连接外网，容器内部不可以。
+A:和flannel网络有关。 sudo iptables -L  -t nat -n
