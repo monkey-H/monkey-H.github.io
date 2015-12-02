@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://monkey-h.github.io/blog/deis-5/</loc>
+    <lastmod>2015-09-21T09:24:43+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://monkey-h.github.io/blog/deis-4/</loc>
     <lastmod>2015-09-18T14:58:04+08:00</lastmod>
   </url>
@@ -129,6 +133,9 @@
     <lastmod>2015-04-28T17:46:50+08:00</lastmod>
   </url>
   <url>
+    <loc>http://monkey-h.github.io/2015-10-19-rizhi.html</loc>
+  </url>
+  <url>
     <loc>http://monkey-h.github.io/blog/archives/</loc>
   </url>
   <url>
@@ -139,5 +146,14 @@
   </url>
   <url>
     <loc>http://monkey-h.github.io/blog/categories/deisyuan-ma-jie-du/</loc>
+  </url>
+  <url>
+    <loc>http://monkey-h.github.io/posts/2/</loc>
+  </url>
+  <url>
+    <loc>http://monkey-h.github.io/posts/3/</loc>
+  </url>
+  <url>
+    <loc>http://monkey-h.github.io/posts/4/</loc>
   </url>
 </urlset>
