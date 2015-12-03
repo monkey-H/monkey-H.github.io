@@ -7,7 +7,7 @@
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content=" 写在前面 反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。 继续阅读; Sep 18th, 2015 deis源码解读 ">
+	<meta name="description" content="写在前面 走了很多弯路之后，我突然想到，我们应该按照部署一个应用的基本流程来走，这样才能比较清晰的看懂。我们这里主要通过两个流程来看，第一个是deisctl的部署过程，因为在部署过程中，他设置了很多环境变量，启动了很多容器，在后面部署应用的时候经常用到，所以我们这里就要看一看。 &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -79,14 +79,51 @@
     <article class="post">
 	<h2 class="title">
 		
-		<a href="/blog/deis-4/">
+		<a href="/blog/deis-5/">
 		
-			Deis源码解读-deis基本组件-builder</a>
+			Deis源码解读-deis基本流程</a>
 	</h2>
 	<div class="entry-content">
 		<h3>写在前面</h3>
 
-<p>反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。</p>
+<p>走了很多弯路之后，我突然想到，我们应该按照部署一个应用的基本流程来走，这样才能比较清晰的看懂。我们这里主要通过两个流程来看，第一个是deisctl的部署过程，因为在部署过程中，他设置了很多环境变量，启动了很多容器，在后面部署应用的时候经常用到，所以我们这里就要看一看。第二个就是部署应用的过程。这个也是理解deis在里面对所有应用，包括流程控制，资源划分，编排调度的重要途径。</p>
+
+
+		
+		<a href="/blog/deis-5/" class="more-link">继续阅读;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+Sep 21st, 2015</div>
+	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
+
+</div>
+	
+</div>
+</article>
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/deis-4/">
+		
+			Deis源码解读-deis基本知识</a>
+	</h2>
+	<div class="entry-content">
+		<h3>写在前面</h3>
+
+<p>读的过程中，有一些非常常见的，go引用的其余的网络在线包，我们这里来介绍一下。</p>
 
 
 		
@@ -393,43 +430,6 @@ Jun 29th, 2015</div>
 
 
 Jun 17th, 2015</div>
-	<div class="tags">
-
-
-	<a class='category' href='/blog/categories/napping-tai/'>nap平台</a>
-
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/my-paas-10/">
-		
-			设计自己的pass平台nap 10&#8212;-统一接口规范</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>继续探讨一些统一接口，列出统一接口的名称，使用方法，和每个接口的功能。并通过大体流程的描述，详细叙述每个接口的功能。并把这篇文章最为web manager管理界面开发的时候参考的主要接口文档。</p>
-
-
-		
-		<a href="/blog/my-paas-10/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Jun 15th, 2015</div>
 	<div class="tags">
 
 

@@ -3,11 +3,11 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>Welcome to monkey-H&#8217;s blog</title>
+	<title>Deis源码解读-deis基本流程 - Welcome to monkey-H&#8217;s blog</title>
 	<meta name="author" content="monkey-H">
 
 	
-	<meta name="description" content="写在前面 dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。 继续阅读; &hellip;">
+	<meta name="description" content="写在前面 走了很多弯路之后，我突然想到，我们应该按照部署一个应用的基本流程来走，这样才能比较清晰的看懂。我们这里主要通过两个流程来看，第一个是deisctl的部署过程，因为在部署过程中，他设置了很多环境变量，启动了很多容器，在后面部署应用的时候经常用到，所以我们这里就要看一看。 &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -73,25 +73,25 @@
 	
 		
 	
-	<div id="content" class="inner">
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">Deis源码解读-deis基本流程</h2>
+	<div class="entry-content"><h3>写在前面</h3>
+
+<p>走了很多弯路之后，我突然想到，我们应该按照部署一个应用的基本流程来走，这样才能比较清晰的看懂。我们这里主要通过两个流程来看，第一个是deisctl的部署过程，因为在部署过程中，他设置了很多环境变量，启动了很多容器，在后面部署应用的时候经常用到，所以我们这里就要看一看。第二个就是部署应用的过程。这个也是理解deis在里面对所有应用，包括流程控制，资源划分，编排调度的重要途径。</p>
+
+<!--more-->
 
 
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/dokkudao-di-gan-liao-shi-yao/">
-		
-			Dokku源码解读一</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
+<h3>deisctl install</h3>
 
-<p>dokku，号称只用了100行左右代码就实现的简单paas平台，号称是你能见到的最小的paas平台，确实，很NB。整个dokku的实现大部分采用了bash脚本命令，只有少数的go语言文件，我们接下来就通过几篇blog，来看看，dokku到底是怎么实现的这个pass平台。</p>
+<p>在安装deis集群的时候，很重要的一个安装步骤，就是deisctl install platform，那么，我们在deis的源码中，在路径/deis/deisctl/deisctl.go中，找到了这么一段。Command函数</p>
 
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>中间好多天没有更新，其实deis的代码已经读的差不多了，但是因为一直在往前走，所以没有时间来记录这些东西了，以后有时间再来更新。
+</span><span class='line'>在这里给大家提一个醒，deis的controller部分，是通过一个django的框架提供给大家的，所以，去看卡django是怎么来响应服务的，就不会很疑惑deis的代码在干什么了。大家加油</span></code></pre></td></tr></table></div></figure>
 
-		
-		<a href="/blog/dokkudao-di-gan-liao-shi-yao/" class="more-link">继续阅读;</a>
-	</div>
+</div>
 
 
 <div class="meta">
@@ -100,86 +100,31 @@
 
 
 
-May 1st, 2015</div>
+Sep 21st, 2015</div>
 	<div class="tags">
+
+
+	<a class='category' href='/blog/categories/deisyuan-ma-jie-du/'>deis源码解读</a>
+
 
 </div>
 	
 </div>
 </article>
 
-
-    <article class="post">
-	<h2 class="title">
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
 		
-		<a href="/blog/bash-trick/">
 		
-			Bash 脚本语言学习收获</a>
-	</h2>
-	<div class="entry-content">
-		<h3>写在前面</h3>
-
-<p>之前一直以为脚本语言就是简单的一种编程语言，不需要过多的了解，只要知道一点皮毛，哪里用到哪里学习一下就可以了，但是，读了一段牛人写的bash脚本程序之后，看不懂，查了bash的基本语法，才知道，原来bash是这么牛掰的一门语言，准备花两天系统学习一下，今天看了一部分，记录一下自己觉得很有意思，之前不知道的东西。</p>
-
-
+		<a class="addthis_button_tweet"></a>
 		
-		<a href="/blog/bash-trick/" class="more-link">继续阅读;</a>
-	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Apr 29th, 2015</div>
-	<div class="tags">
-
-</div>
-	
-</div>
-</article>
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/hello-world/">
-		
-			Hello World</a>
-	</h2>
-	<div class="entry-content">
-		<p><code>hello! world</code></p>
-
 		
 		
 	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-Apr 28th, 2015</div>
-	<div class="tags">
-
-</div>
 	
 </div>
-</article>
 
-<nav id="pagenavi">
-    
-        
-            <a href="/posts/3" class="prev">Prev</a>
-        
-    
-    
-    <div class="center"><a href="/blog/archives">Blog Archives</a></div>
-</nav>
+
 </div>
 	<footer id="footer" class="inner">Copyright &copy; 2015
 

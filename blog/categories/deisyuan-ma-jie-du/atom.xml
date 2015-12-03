@@ -4,7 +4,7 @@
   <title><![CDATA[分类：deis源码解读 | Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/blog/categories/deisyuan-ma-jie-du/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-12-03T10:47:54+08:00</updated>
+  <updated>2015-12-03T10:48:44+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -58,107 +58,188 @@ import github.com/masterminds/cookoo go语言代码，一般都引入了大量�
 <p>既然他引入了cookoo，我们就看看这个cookoo是个什么吊东西。
 直接进入那个github的网址。
 cookoo是一个开发框架。开发者经常把他当做一个中间件平台，这个平台可以给开发者足够的灵活性来开发应用，同时，handles the top-level structure for you.
-&#8220;`
-main.go</p>
-
-<p>package main</p>
-
-<p>import (
-    &ldquo;github.com/Masterminds/cookoo&rdquo;
-    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
-)</p>
-
-<p>func main() {
-    cli.New(cookoo.Cookoo()).Run(&ldquo;help&rdquo;)
-}
-&#8220;`</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>main.go&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;package main&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;import (
+</span><span class='line'>    &ldquo;github.com/Masterminds/cookoo&rdquo;
+</span><span class='line'>    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
+</span><span class='line'>)&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;func main() {
+</span><span class='line'>    cli.New(cookoo.Cookoo()).Run(&ldquo;help&rdquo;)
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure></p>
 
 <p>可以看到，这里用cli.New()创建了一个新的cookoo app，这句话反悔了三个东西，registry（用来声明routes），router（用来执行route），context（用来给app传送数据等）</p>
 
 <p>运行是通过go run main.go -h这样来运行，或者go run main.go这样。这里的-h是-help的意思，这个route是cookoo默认就有的，不需要我们自己再去定义。
-&#8220;`
-func main() {
-    reg, router, cxt := cookoo.Cookoo()</p>
-
-<pre><code>reg.Route("hello", "A Hello World route").
-    Does(fmt.Printf, "_").
-    Using("format").WithDefault("Hello World!\n")
-
-cli.New(reg, router, cxt).Run("hello")
-</code></pre>
-
-<p>}
-<code>
-这里就不用说了，重新定义了main函数。第一条命令就返回了上面说的那三个东西，第二行就是定义了一条新的route。
-一条route有一个名字和一个描述，接着跟着若干条命令。可以认为是一个task（hello），和一系列的步骤需要完成这个task。刚刚也说了在cookoo app中，router是用来跑task的，但是，用户一般不直接和router交互，而是通过runner来交互。
-在上面我们定义的route中，Route（）函数有两个参数，一个是route的名字，这个很重要，在后面对route的调用中，就是通过route的名字来调用。第二个参数就是一个对route的描述，这个是对开发者而言的，终端用户一般看不到。cookoo用这个东西来自动生成程序的文档。route最终都是要做事情的，所以，在route的后面，都会跟着若干Does，本例中route Does（fmt.Printf, "_"）同样的，Does也有两个参数，一个是要跑的命令，另一个是输出的名字。这里的"_"的意思就是忽略这条命令的输出，这个不重要。fmt.Printf是cookoo的内嵌命令，直接调用了go的fmt.Printf。命令需要的参数，我们通过Using来输入，Using通过键值对的方式，把数据传输到Does command中的函数中去。
-那么，跑这调route的方式就是cli.New(reg, router, cxt).Run("hello")，然后如果我们go run main.go，就会出现Hello World!的输出。
-</code>
-package main</p>
-
-<p>import (
-    &ldquo;github.com/Masterminds/cookoo&rdquo;
-    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
-    &ldquo;github.com/Masterminds/cookoo/fmt&rdquo;</p>
-
-<pre><code>"flag"
-</code></pre>
-
-<p>)</p>
-
-<p>const (
-    Summary = &ldquo;A Hello World program&rdquo;
-    Description = <code>This program writes Hello World to standard output.
-With the -a flag, the second word can be replaced by an artitary string.
-</code>
-)</p>
-
-<p>func main() {
-    reg, router, cxt := cookoo.Cookoo()</p>
-
-<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
-flags.Bool("h", false, "Show help text")
-flags.String("a", "World", "A string to place after 'Hello'")
-
-reg.Route("hello", "A Hello World route").
-    Does(fmt.Printf, "_").
-    Using("format").WithDefault("Hello %s!\n").
-    Using("0").From("cxt:a")
-
-cli.New(reg, router, cxt).Help(Summary, Description, flags).Run("hello")
-</code></pre>
-
-<p>}
-&#8220;`</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>func main() {
+</span><span class='line'>    reg, router, cxt := cookoo.Cookoo()&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;pre&gt;&lt;code&gt;reg.Route("hello", "A Hello World route").
+</span><span class='line'>    Does(fmt.Printf, "_").
+</span><span class='line'>    Using("format").WithDefault("Hello World!\n")
+</span><span class='line'>
+</span><span class='line'>cli.New(reg, router, cxt).Run("hello")
+</span><span class='line'>&lt;/code&gt;&lt;/pre&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;}
+</span><span class='line'>&lt;code&gt;
+</span><span class='line'>这里就不用说了，重新定义了main函数。第一条命令就返回了上面说的那三个东西，第二行就是定义了一条新的route。
+</span><span class='line'>一条route有一个名字和一个描述，接着跟着若干条命令。可以认为是一个task（hello），和一系列的步骤需要完成这个task。刚刚也说了在cookoo app中，router是用来跑task的，但是，用户一般不直接和router交互，而是通过runner来交互。
+</span><span class='line'>在上面我们定义的route中，Route（）函数有两个参数，一个是route的名字，这个很重要，在后面对route的调用中，就是通过route的名字来调用。第二个参数就是一个对route的描述，这个是对开发者而言的，终端用户一般看不到。cookoo用这个东西来自动生成程序的文档。route最终都是要做事情的，所以，在route的后面，都会跟着若干Does，本例中route Does（fmt.Printf, "_"）同样的，Does也有两个参数，一个是要跑的命令，另一个是输出的名字。这里的"_"的意思就是忽略这条命令的输出，这个不重要。fmt.Printf是cookoo的内嵌命令，直接调用了go的fmt.Printf。命令需要的参数，我们通过Using来输入，Using通过键值对的方式，把数据传输到Does command中的函数中去。
+</span><span class='line'>那么，跑这调route的方式就是cli.New(reg, router, cxt).Run("hello")，然后如果我们go run main.go，就会出现Hello World!的输出。
+</span><span class='line'>&lt;/code&gt;
+</span><span class='line'>package main&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;import (
+</span><span class='line'>    &ldquo;github.com/Masterminds/cookoo&rdquo;
+</span><span class='line'>    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
+</span><span class='line'>    &ldquo;github.com/Masterminds/cookoo/fmt&rdquo;&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;pre&gt;&lt;code&gt;"flag"
+</span><span class='line'>&lt;/code&gt;&lt;/pre&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;)&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;const (
+</span><span class='line'>    Summary = &ldquo;A Hello World program&rdquo;
+</span><span class='line'>    Description = &lt;code&gt;This program writes Hello World to standard output.
+</span><span class='line'>With the -a flag, the second word can be replaced by an artitary string.
+</span><span class='line'>&lt;/code&gt;
+</span><span class='line'>)&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;func main() {
+</span><span class='line'>    reg, router, cxt := cookoo.Cookoo()&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;pre&gt;&lt;code&gt;flags := flag.NewFlagSet("global", flag.PanicOnError)
+</span><span class='line'>flags.Bool("h", false, "Show help text")
+</span><span class='line'>flags.String("a", "World", "A string to place after 'Hello'")
+</span><span class='line'>
+</span><span class='line'>reg.Route("hello", "A Hello World route").
+</span><span class='line'>    Does(fmt.Printf, "_").
+</span><span class='line'>    Using("format").WithDefault("Hello %s!\n").
+</span><span class='line'>    Using("0").From("cxt:a")
+</span><span class='line'>
+</span><span class='line'>cli.New(reg, router, cxt).Help(Summary, Description, flags).Run("hello")
+</span><span class='line'>&lt;/code&gt;&lt;/pre&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;}</span></code></pre></td></tr></table></div></figure></p>
 
 <p>const用来定义常量，summary一般较短，description一般较长。
 flag也是很重要的一个部分。cookoo用的GO语言内置的flag包来支持commandline flag。在上面的例子中，我们声明了两种flag。一个是-h，如果我们想override 默认的flag，这个是必须的。第二个是-a，这个flag允许我们从command line传送一个sring到程序中。
 那么运行起来是什么样子的呢？
-&#8220;`
-go run main.go
-Hello World!</p>
-
-<p>go run main.go -h</p>
-
-<h1>SUMMARY</h1>
-
-<p>A Hello World program</p>
-
-<h1>USAGE</h1>
-
-<p>This program writes Hello World to standard output.</p>
-
-<p>With the -a flag, the second word can be replaced by an artitary string.</p>
-
-<h1>FLAGS</h1>
-
-<pre><code>-a: A string to place after 'Hello' (Default: 'World')
--h: Show help text (Default: 'false')
-</code></pre>
-
-<p>go run main.go -a You
-Hello You!
-&#8220;`
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>go run main.go
+</span><span class='line'>Hello World!&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;go run main.go -h&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;h1&gt;SUMMARY&lt;/h1&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;A Hello World program&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;h1&gt;USAGE&lt;/h1&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;This program writes Hello World to standard output.&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;With the -a flag, the second word can be replaced by an artitary string.&lt;/p&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;h1&gt;FLAGS&lt;/h1&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;pre&gt;&lt;code&gt;-a: A string to place after 'Hello' (Default: 'World')
+</span><span class='line'>-h: Show help text (Default: 'false')
+</span><span class='line'>&lt;/code&gt;&lt;/pre&gt;
+</span><span class='line'>
+</span><span class='line'>&lt;p&gt;go run main.go -a You
+</span><span class='line'>Hello You!</span></code></pre></td></tr></table></div></figure>
 我们再看route的定义。Does有了两个参数，第一个是format，第二个是0，这个0的意思是把第一个参数传给format string。类似于fmt.Printf(format, cxt.Get(&ldquo;a&rdquo;, &ldquo;&rdquo;).(string))那么，cxt的a是哪里来的呢？是我们最后cli.New(reg, router, cxt).Help(Summary, Description, flags).Run(&ldquo;hello&rdquo;)，这里的flags里面的flags.String()这里定义的。</p>
 
 <p>如果只有一条命令，就没上面意思了，如果多条命令呢？

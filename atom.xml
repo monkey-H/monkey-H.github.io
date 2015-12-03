@@ -4,7 +4,7 @@
   <title><![CDATA[Welcome to monkey-H's blog]]></title>
   <link href="http://monkey-h.github.io/atom.xml" rel="self"/>
   <link href="http://monkey-h.github.io/"/>
-  <updated>2015-09-19T10:33:43+08:00</updated>
+  <updated>2015-12-03T10:48:44+08:00</updated>
   <id>http://monkey-h.github.io/</id>
   <author>
     <name><![CDATA[monkey-H]]></name>
@@ -14,13 +14,37 @@
 
   
   <entry>
-    <title type="html"><![CDATA[Deis源码解读-deis基本组件-builder]]></title>
+    <title type="html"><![CDATA[Deis源码解读-deis基本流程]]></title>
+    <link href="http://monkey-h.github.io/blog/deis-5/"/>
+    <updated>2015-09-21T09:24:43+08:00</updated>
+    <id>http://monkey-h.github.io/blog/deis-5</id>
+    <content type="html"><![CDATA[<h3>写在前面</h3>
+
+<p>走了很多弯路之后，我突然想到，我们应该按照部署一个应用的基本流程来走，这样才能比较清晰的看懂。我们这里主要通过两个流程来看，第一个是deisctl的部署过程，因为在部署过程中，他设置了很多环境变量，启动了很多容器，在后面部署应用的时候经常用到，所以我们这里就要看一看。第二个就是部署应用的过程。这个也是理解deis在里面对所有应用，包括流程控制，资源划分，编排调度的重要途径。</p>
+
+<!--more-->
+
+
+<h3>deisctl install</h3>
+
+<p>在安装deis集群的时候，很重要的一个安装步骤，就是deisctl install platform，那么，我们在deis的源码中，在路径/deis/deisctl/deisctl.go中，找到了这么一段。Command函数</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>中间好多天没有更新，其实deis的代码已经读的差不多了，但是因为一直在往前走，所以没有时间来记录这些东西了，以后有时间再来更新。
+</span><span class='line'>在这里给大家提一个醒，deis的controller部分，是通过一个django的框架提供给大家的，所以，去看卡django是怎么来响应服务的，就不会很疑惑deis的代码在干什么了。大家加油</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Deis源码解读-deis基本知识]]></title>
     <link href="http://monkey-h.github.io/blog/deis-4/"/>
     <updated>2015-09-18T14:58:04+08:00</updated>
     <id>http://monkey-h.github.io/blog/deis-4</id>
     <content type="html"><![CDATA[<h3>写在前面</h3>
 
-<p>反正都要读的，我们就从builder开始吧。第一个组件总是最难读懂的，慢慢来，要有耐心。</p>
+<p>读的过程中，有一些非常常见的，go引用的其余的网络在线包，我们这里来介绍一下。</p>
 
 <!--more-->
 
@@ -35,122 +59,222 @@ import github.com/masterminds/cookoo go语言代码，一般都引入了大量�
 
 <p>既然他引入了cookoo，我们就看看这个cookoo是个什么吊东西。
 直接进入那个github的网址。
-cookoo是一个开发框架。开发者经常把他当做一个中间件平台，这个平台可以给开发者足够的灵活性来开发应用，同时，handles the top-level structure for you.
-main.go</p>
+cookoo是一个开发框架。开发者经常把他当做一个中间件平台，这个平台可以给开发者足够的灵活性来开发应用，同时，handles the top-level structure for you.</p>
 
-<p>package main</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>main.go
+</span><span class='line'>
+</span><span class='line'>package main
+</span><span class='line'>
+</span><span class='line'>import (
+</span><span class='line'>    "github.com/Masterminds/cookoo"
+</span><span class='line'>    "github.com/Masterminds/cookoo/cli"
+</span><span class='line'>)
+</span><span class='line'>
+</span><span class='line'>func main() {
+</span><span class='line'>    cli.New(cookoo.Cookoo()).Run("help")
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
-<p>import (
-    &ldquo;github.com/Masterminds/cookoo&rdquo;
-    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
-)</p>
-
-<p>func main() {
-    cli.New(cookoo.Cookoo()).Run(&ldquo;help&rdquo;)
-}</p>
 
 <p>可以看到，这里用cli.New()创建了一个新的cookoo app，这句话反悔了三个东西，registry（用来声明routes），router（用来执行route），context（用来给app传送数据等）</p>
 
 <p>运行是通过go run main.go -h这样来运行，或者go run main.go这样。这里的-h是-help的意思，这个route是cookoo默认就有的，不需要我们自己再去定义。</p>
 
-<p>func main() {
-    reg, router, cxt := cookoo.Cookoo()</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>func main() {
+</span><span class='line'>    reg, router, cxt := cookoo.Cookoo()
+</span><span class='line'>
+</span><span class='line'>    reg.Route("hello", "A Hello World route").
+</span><span class='line'>        Does(fmt.Printf, "_").
+</span><span class='line'>        Using("format").WithDefault("Hello World!\n")
+</span><span class='line'>
+</span><span class='line'>    cli.New(reg, router, cxt).Run("hello")
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
-<pre><code>reg.Route("hello", "A Hello World route").
-    Does(fmt.Printf, "_").
-    Using("format").WithDefault("Hello World!\n")
 
-cli.New(reg, router, cxt).Run("hello")
-</code></pre>
-
-<p>}
-这里就不用说了，重新定义了main函数。第一条命令就返回了上面说的那三个东西，第二行就是定义了一条新的route。
+<p>这里就不用说了，重新定义了main函数。第一条命令就返回了上面说的那三个东西，第二行就是定义了一条新的route。
 一条route有一个名字和一个描述，接着跟着若干条命令。可以认为是一个task（hello），和一系列的步骤需要完成这个task。刚刚也说了在cookoo app中，router是用来跑task的，但是，用户一般不直接和router交互，而是通过runner来交互。
 在上面我们定义的route中，Route（）函数有两个参数，一个是route的名字，这个很重要，在后面对route的调用中，就是通过route的名字来调用。第二个参数就是一个对route的描述，这个是对开发者而言的，终端用户一般看不到。cookoo用这个东西来自动生成程序的文档。route最终都是要做事情的，所以，在route的后面，都会跟着若干Does，本例中route Does（fmt.Printf, &ldquo;<em>&#8220;）同样的，Does也有两个参数，一个是要跑的命令，另一个是输出的名字。这里的&rdquo;</em>&ldquo;的意思就是忽略这条命令的输出，这个不重要。fmt.Printf是cookoo的内嵌命令，直接调用了go的fmt.Printf。命令需要的参数，我们通过Using来输入，Using通过键值对的方式，把数据传输到Does command中的函数中去。
-那么，跑这调route的方式就是cli.New(reg, router, cxt).Run(&#8220;hello&rdquo;)，然后如果我们go run main.go，就会出现Hello World!的输出。
-package main</p>
+那么，跑这调route的方式就是cli.New(reg, router, cxt).Run(&#8220;hello&rdquo;)，然后如果我们go run main.go，就会出现Hello World!的输出。</p>
 
-<p>import (
-    &ldquo;github.com/Masterminds/cookoo&rdquo;
-    &ldquo;github.com/Masterminds/cookoo/cli&rdquo;
-    &ldquo;github.com/Masterminds/cookoo/fmt&rdquo;</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>package main
+</span><span class='line'>
+</span><span class='line'>import (
+</span><span class='line'>  "github.com/Masterminds/cookoo"
+</span><span class='line'>  "github.com/Masterminds/cookoo/cli"
+</span><span class='line'>  "github.com/Masterminds/cookoo/fmt"
+</span><span class='line'>
+</span><span class='line'>  "flag"
+</span><span class='line'>)
+</span><span class='line'>
+</span><span class='line'>const (
+</span><span class='line'>  Summary = "A Hello World program"
+</span><span class='line'>  Description = `This program writes Hello World to standard output.
+</span><span class='line'>With the -a flag, the second word can be replaced by an artitary string.
+</span><span class='line'>`
+</span><span class='line'>)
+</span><span class='line'>
+</span><span class='line'>func main() {
+</span><span class='line'>  reg, router, cxt := cookoo.Cookoo()
+</span><span class='line'>
+</span><span class='line'>  flags := flag.NewFlagSet("global", flag.PanicOnError)
+</span><span class='line'>  flags.Bool("h", false, "Show help text")
+</span><span class='line'>  flags.String("a", "World", "A string to place after 'Hello'")
+</span><span class='line'>
+</span><span class='line'>  reg.Route("hello", "A Hello World route").
+</span><span class='line'>      Does(fmt.Printf, "_").
+</span><span class='line'>      Using("format").WithDefault("Hello %s!\n").
+</span><span class='line'>      Using("0").From("cxt:a")
+</span><span class='line'>
+</span><span class='line'>  cli.New(reg, router, cxt).Help(Summary, Description, flags).Run("hello")
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
-<pre><code>"flag"
-</code></pre>
 
-<p>)</p>
-
-<p>const (
-    Summary = &ldquo;A Hello World program&rdquo;
-    Description = <code>This program writes Hello World to standard output.
-With the -a flag, the second word can be replaced by an artitary string.
-</code>
-)</p>
-
-<p>func main() {
-    reg, router, cxt := cookoo.Cookoo()</p>
-
-<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
-flags.Bool("h", false, "Show help text")
-flags.String("a", "World", "A string to place after 'Hello'")
-
-reg.Route("hello", "A Hello World route").
-    Does(fmt.Printf, "_").
-    Using("format").WithDefault("Hello %s!\n").
-    Using("0").From("cxt:a")
-
-cli.New(reg, router, cxt).Help(Summary, Description, flags).Run("hello")
-</code></pre>
-
-<p>}
-const用来定义常量，summary一般较短，description一般较长。
+<p>const用来定义常量，summary一般较短，description一般较长。
 flag也是很重要的一个部分。cookoo用的GO语言内置的flag包来支持commandline flag。在上面的例子中，我们声明了两种flag。一个是-h，如果我们想override 默认的flag，这个是必须的。第二个是-a，这个flag允许我们从command line传送一个sring到程序中。
-那么运行起来是什么样子的呢？
-go run main.go
-Hello World!</p>
+那么运行起来是什么样子的呢？</p>
 
-<p>go run main.go -h</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>go run main.go
+</span><span class='line'>Hello World!
+</span><span class='line'>
+</span><span class='line'>go run main.go -h
+</span><span class='line'>
+</span><span class='line'>SUMMARY
+</span><span class='line'>=======
+</span><span class='line'>
+</span><span class='line'>A Hello World program
+</span><span class='line'>
+</span><span class='line'>USAGE
+</span><span class='line'>=====
+</span><span class='line'>
+</span><span class='line'>This program writes Hello World to standard output.
+</span><span class='line'>
+</span><span class='line'>With the -a flag, the second word can be replaced by an artitary string.
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>FLAGS
+</span><span class='line'>=====
+</span><span class='line'>    -a: A string to place after 'Hello' (Default: 'World')
+</span><span class='line'>    -h: Show help text (Default: 'false')
+</span><span class='line'>    
+</span><span class='line'>    
+</span><span class='line'>go run main.go -a You
+</span><span class='line'>Hello You!</span></code></pre></td></tr></table></div></figure>
 
-<h1>SUMMARY</h1>
-
-<p>A Hello World program</p>
-
-<h1>USAGE</h1>
-
-<p>This program writes Hello World to standard output.</p>
-
-<p>With the -a flag, the second word can be replaced by an artitary string.</p>
-
-<h1>FLAGS</h1>
-
-<pre><code>-a: A string to place after 'Hello' (Default: 'World')
--h: Show help text (Default: 'false')
-</code></pre>
-
-<p>go run main.go -a You
-Hello You!</p>
 
 <p>我们再看route的定义。Does有了两个参数，第一个是format，第二个是0，这个0的意思是把第一个参数传给format string。类似于fmt.Printf(format, cxt.Get(&ldquo;a&rdquo;, &ldquo;&rdquo;).(string))那么，cxt的a是哪里来的呢？是我们最后cli.New(reg, router, cxt).Help(Summary, Description, flags).Run(&ldquo;hello&rdquo;)，这里的flags里面的flags.String()这里定义的。</p>
 
-<p>如果只有一条命令，就没上面意思了，如果多条命令呢？
-reg.Route(&ldquo;hello&rdquo;, &ldquo;A Hello World route&rdquo;).
-        Does(fmt.Printf, &ldquo;_&rdquo;).
-        Using(&ldquo;format&rdquo;).WithDefault(&ldquo;Hello %s!\n&rdquo;).
-        Using(&ldquo;0&rdquo;).From(&ldquo;cxt:a&rdquo;)</p>
+<p>如果只有一条命令，就没上面意思了，如果多条命令呢？</p>
 
-<pre><code>reg.Route("goodbye", "A Goodbye World route").
-    Does(fmt.Printf, "_").
-    Using("format").WithDefault("Goodbye %s!\n").
-    Using("0").From("cxt:a")
-</code></pre>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>reg.Route("hello", "A Hello World route").
+</span><span class='line'>        Does(fmt.Printf, "_").
+</span><span class='line'>        Using("format").WithDefault("Hello %s!\n").
+</span><span class='line'>        Using("0").From("cxt:a")
+</span><span class='line'>
+</span><span class='line'>    reg.Route("goodbye", "A Goodbye World route").
+</span><span class='line'>        Does(fmt.Printf, "_").
+</span><span class='line'>        Using("format").WithDefault("Goodbye %s!\n").
+</span><span class='line'>        Using("0").From("cxt:a")</span></code></pre></td></tr></table></div></figure>
+
 
 <p>看这个，就有了多条命令。
 同样的，调用就变成了这样cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
-和原来的基本一样，只不过最后的Run（“hello”）变成了RunSubcommand()，就是可以调用多个了。
-go run main.go -a Matt hello
-Hello Matt!
-go run main.go -a Matt goodbye
-Goodbye Matt!</p>
+和原来的基本一样，只不过最后的Run（“hello”）变成了RunSubcommand()，就是可以调用多个了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>go run main.go -a Matt hello
+</span><span class='line'>Hello Matt!
+</span><span class='line'>go run main.go -a Matt goodbye
+</span><span class='line'>Goodbye Matt!</span></code></pre></td></tr></table></div></figure>
+
 
 <p>但是，如果go run main.go goodbye -a Matt
 输出就是Goodbye World!这是为什么呢？
@@ -158,71 +282,127 @@ Goodbye Matt!</p>
 go run main.go [GLOBAL_FLAGS] subcommand [LOCAL_FLAGS]
 global类型的flag可以在整个app中共享，local flag只能对指定的subcommand用。</p>
 
-<p>func main() {
-    reg, router, cxt := cookoo.Cookoo()</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>func main() {
+</span><span class='line'>  reg, router, cxt := cookoo.Cookoo()
+</span><span class='line'>
+</span><span class='line'>  flags := flag.NewFlagSet("global", flag.PanicOnError)
+</span><span class='line'>  flags.Bool("h", false, "Show help text")
+</span><span class='line'>  flags.String("a", "World", "A string to place after 'Hello'")
+</span><span class='line'>
+</span><span class='line'>  helloFlags := flag.NewFlagSet("hello", flag.PanicOnError)
+</span><span class='line'>  helloFlags.String("s", "Hello", "Alternate salutation")
+</span><span class='line'>
+</span><span class='line'>  reg.Route("hello", "A Hello World route").
+</span><span class='line'>      // Not necessary if "subcommand" is true on ParseArgs.
+</span><span class='line'>      //Does(cli.ShiftArgs, "cmd").
+</span><span class='line'>          //Using("args").WithDefault("runner.Args").
+</span><span class='line'>          //Using("n").WithDefault(1).
+</span><span class='line'>      Does(cli.ParseArgs, "extras").
+</span><span class='line'>          Using("flagset").WithDefault(helloFlags).
+</span><span class='line'>          Using("args").From("cxt:runner.Args").
+</span><span class='line'>          Using("subcommand").WithDefault(true).
+</span><span class='line'>      Does(fmt.Printf, "_").
+</span><span class='line'>          Using("format").WithDefault("%s %s!\n").
+</span><span class='line'>          Using("0").From("cxt:s").
+</span><span class='line'>          Using("1").From("cxt:a")
+</span><span class='line'>
+</span><span class='line'>  reg.Route("goodbye", "A Goodbye World route").
+</span><span class='line'>      Does(fmt.Printf, "_").
+</span><span class='line'>      Using("format").WithDefault("Goodbye %s!\n").
+</span><span class='line'>      Using("0").From("cxt:a")
+</span><span class='line'>
+</span><span class='line'>  cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
-<pre><code>flags := flag.NewFlagSet("global", flag.PanicOnError)
-flags.Bool("h", false, "Show help text")
-flags.String("a", "World", "A string to place after 'Hello'")
-
-helloFlags := flag.NewFlagSet("hello", flag.PanicOnError)
-helloFlags.String("s", "Hello", "Alternate salutation")
-
-reg.Route("hello", "A Hello World route").
-    // Not necessary if "subcommand" is true on ParseArgs.
-    //Does(cli.ShiftArgs, "cmd").
-        //Using("args").WithDefault("runner.Args").
-        //Using("n").WithDefault(1).
-    Does(cli.ParseArgs, "extras").
-        Using("flagset").WithDefault(helloFlags).
-        Using("args").From("cxt:runner.Args").
-        Using("subcommand").WithDefault(true).
-    Does(fmt.Printf, "_").
-        Using("format").WithDefault("%s %s!\n").
-        Using("0").From("cxt:s").
-        Using("1").From("cxt:a")
-
-reg.Route("goodbye", "A Goodbye World route").
-    Does(fmt.Printf, "_").
-    Using("format").WithDefault("Goodbye %s!\n").
-    Using("0").From("cxt:a")
-
-cli.New(reg, router, cxt).Help(Summary, Description, flags).RunSubcommand()
-</code></pre>
-
-<p>}</p>
 
 <p>两个地方注意一下，第一，flag.NewFlagSet的时候，里面的是global，还是subcommand的名字，直接决定了是否是local flag。第二，后面route配置的时候，注意多了一个Does，用来加上subcommand的WithDefault，设置为true。
-调用有点意思。
-$ go run main.go hello
-Hello World!</p>
+调用有点意思。</p>
 
-<p>$ go run main.go hello -s Hi
-Hi World!</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ go run main.go hello
+</span><span class='line'>Hello World!
+</span><span class='line'>
+</span><span class='line'>$ go run main.go hello -s Hi
+</span><span class='line'>Hi World!
+</span><span class='line'>
+</span><span class='line'>$ go run main.go -a You hello
+</span><span class='line'>Hello You!
+</span><span class='line'>
+</span><span class='line'>$ go run main.go -a You hello -s Hi
+</span><span class='line'>Hi You!</span></code></pre></td></tr></table></div></figure>
 
-<p>$ go run main.go -a You hello
-Hello You!</p>
 
-<p>$ go run main.go -a You hello -s Hi
-Hi You!</p>
+<p>让我们来看看，做同样的事情的另外一种实现方式。</p>
 
-<p>让我们来看看，做同样的事情的另外一种实现方式。
-reg.Route(&ldquo;hello&rdquo;, &ldquo;A Hello World route&rdquo;).
-        Does(cli.ShiftArgs, &ldquo;cmd&rdquo;).
-            Using(&ldquo;args&rdquo;).WithDefault(&ldquo;runner.Args&rdquo;).
-            Using(&ldquo;n&rdquo;).WithDefault(1).
-        Does(cli.ParseArgs, &ldquo;extras&rdquo;).
-            Using(&ldquo;flagset&rdquo;).WithDefault(helloFlags).
-            Using(&ldquo;args&rdquo;).From(&ldquo;cxt:runner.Args&rdquo;).
-        Does(fmt.Printf, &ldquo;_&rdquo;).
-            Using(&ldquo;format&rdquo;).WithDefault(&ldquo;%s %s!\n&rdquo;).
-            Using(&ldquo;0&rdquo;).From(&ldquo;cxt:s&rdquo;).
-            Using(&ldquo;1&rdquo;).From(&ldquo;cxt:a&rdquo;)</p>
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>reg.Route("hello", "A Hello World route").
+</span><span class='line'>        Does(cli.ShiftArgs, "cmd").
+</span><span class='line'>            Using("args").WithDefault("runner.Args").
+</span><span class='line'>            Using("n").WithDefault(1).
+</span><span class='line'>        Does(cli.ParseArgs, "extras").
+</span><span class='line'>            Using("flagset").WithDefault(helloFlags).
+</span><span class='line'>            Using("args").From("cxt:runner.Args").
+</span><span class='line'>        Does(fmt.Printf, "_").
+</span><span class='line'>            Using("format").WithDefault("%s %s!\n").
+</span><span class='line'>            Using("0").From("cxt:s").
+</span><span class='line'>            Using("1").From("cxt:a")</span></code></pre></td></tr></table></div></figure>
+
 
 <p>这里没有了之前的设置subcommand.WithDefault的true。而是通过移动参数的形式。
-go run main.go -a matt hello -s hi
+<code>go run main.go -a matt hello -s hi</code>
 这样会给os.Args设置成这样：[]string{ &ldquo;-a&rdquo;, &ldquo;matt&rdquo;, &ldquo;hello&rdquo;, &ldquo;-s&rdquo;, &ldquo;hi&rdquo;}
-当程序第一次跑的时候，会把global flags提取出来，把剩余的放入runner.Args。类似于cxt.Put(&ldquo;runner.Args&rdquo;, []string{&ldquo;hello&rdquo;, &ldquo;-s&rdquo;, &ldquo;hi&rdquo;})，但是，当hello command run的时候，我们希望获得他自己的flag，但是hello却是第一个参数，所以，我们要把这个移动一下，就有了那个cli.ShiftArgs，那段代码的意思就是，把第一个参数放入cmd，剩下的参数放入到cxt:runner.Args，接下来的就和上个实现基本一致了。这个方法即可以用来调试，又可以用来定义更多的参数。</p>
+当程序第一次跑的时候，会把global flags提取出来，把剩余的放入runner.Args。类似于<code>cxt.Put("runner.Args", []string{"hello", "-s", "hi"})</code>，但是，当hello command run的时候，我们希望获得他自己的flag，但是hello却是第一个参数，所以，我们要把这个移动一下，就有了那个cli.ShiftArgs，那段代码的意思就是，把第一个参数放入cmd，剩下的参数放入到cxt:runner.Args，接下来的就和上个实现基本一致了。这个方法即可以用来调试，又可以用来定义更多的参数。</p>
 ]]></content>
   </entry>
   
@@ -2043,496 +2223,6 @@ wantedby指出这个unit是哪个targt的一部分。</p>
 <li><p>RestartSec 当重启一个服务的时候，要睡眠多少秒，当预防失败的服务没100ms自己尝试restart的情况。</p></li>
 <li><p>=-是忽视这条命令产生的错误。当我们删除一个不存在的container的时候，会报没有这个container错误，但是我们只是保险起见，所以这个并不能称为错误。</p></li>
 </ul>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[图的三角形计数]]></title>
-    <link href="http://monkey-h.github.io/blog/hadoop-4/"/>
-    <updated>2015-05-08T09:05:02+08:00</updated>
-    <id>http://monkey-h.github.io/blog/hadoop-4</id>
-    <content type="html"><![CDATA[<h3>实验背景</h3>
-
-<p>图的三角形计数问题是一个基本的图计算问题,是很多复杂网络分析(比如社 交网络分析)的基础。目前图的三角形计数问题已经成为了 Spark 系统中 GraphX 图计算库 所提供的一个算法级API。本次实验任务就是要在Hadoop系统上实现Twitter社交网络图的 三角形计数任务。
-换句话说，这TM是mapreduce课程的作业啊，不做也得做啊！！！</p>
-
-<!--more-->
-
-
-<h3>实验要求</h3>
-
-<p>一个社交网络可以看做是一张图(离散数学中的图)。社交网络中的人对应于图的顶点;社 交网络中的人际关系对应于图中的边。在本次实验任务中,我们只考虑一种关系——用户之 间的关注关系。假设“王五”在 Twitter/微博中关注了“李四”,则在社交网络图中,有一条对 应的从“王五”指向“李四”的有向边。图 1 中展示了一个简单的社交网络图,人之间的关注关 系通过图中的有向边标识了出来。
-<img src="" alt="graph" />
-本次的实验任务就是在给定的社交网络图中,统计图中所有三角形的数量。
-在统计前,需要先进行有向边到无向边的转换,依据如下逻辑转换:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>IF ( A→B) OR (B→A) THEN A-B</span></code></pre></td></tr></table></div></figure>
-
-
-<p>“A→B”表示从顶点 A 到顶点 B 有一条有向边。A-B 表示顶点 A 和顶点 B 之间有一条无向边。
-一个示例见图 1,图 1 右侧的图就是左侧的图去除边方向后对应的无向图。 请在无向图上统计三角形的个数。在图 1 的例子中,一共有 3 个三角形。
-+ 输入格式
-输入数据仅一个文件。该文件由若干行组成,每一行由两个以空格分隔的整数组成:
-A B
-A,B 分别是两个顶点的 ID。这一行记录表示图中具有一条由 A 到 B 的有向边。整个图的结构由该文件唯一确定。
-下面的框中是文件部分内容的示例:</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>87982906 17975898
-</span><span class='line'>17809581 35664799
-</span><span class='line'>524620711 270231980
-</span><span class='line'>247583674 230498574
-</span><span class='line'>348281617 255810948
-</span><span class='line'>159294262 230766095
-</span><span class='line'>14927205 5380672
-</span><span class='line'>......</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>输出格式
-请在报告中报告如下内容:
-1.实验设计说明,包括主要设计思路、算法设计、程序和各个类的设计说明
-2.最终统计出的三角形个数
-3.程序运行和实验结果说明和分析
-4.性能、扩展性等方面存在的不足和可能的改进之处
-5.源程序,执行程序
-6.在集群上运行 MapReduce 作业的截屏、JobTracker 上记录的截屏</li>
-</ul>
-
-
-<h3>实验思路</h3>
-
-<p>基本思路很简单，假如我们找到了 A->B 和 A->C 两个边，那么，我们只要去找有没有B->C这条边就可以了。
-详细来说，我们使用了三个map reduce过程来实现这个东西。
-- 第一个map reduce
-map用来调换顺序，意思就是，我们把 A->B 和 B->A 都变成 A->B，这样有什么好处呢？之前实验要求里也说了， A->B 和 B->A 这两条有向边应该化成一条无向边，这第一个map reduce就是做这个事情的。这里，把 A->B 作为key。
-reduce过程是去重，就是假如有多个A->B，记做一个边，当然如果实验要求不同，可以不同。
-- 第二个mapreduce
-map过程是把key A->B 拆开，把A作为key，把B作为value。这里是干什么呢？这里就是要寻找了，我们要找到需要的边，也就是上面举例中的B->C边存在不存在。
-reduce过程，对value进行处理。比如key为A，那么，其value应该是所有和A有边的点。假如B,C，那么我们就要把B->C作为新的key，其value我们用&amp;来代替，意思就是这是我们要找的边。另一方面，我们不能把原来的边直接删掉，因为我们还是要从这里面找边，那么，还要有A->B,A->C这样的key，其value我们用#来表示，代表这是存在的边。
-- 第三个mapreduce
-map过程没有做上面事情，就是把第二部reduce的数据重新传到第三步的reduce。
-reduce就是比对。我们找到每个key后面的value中，有没有#，如果有，就说明存在这个边，然后把除了#之外的&amp;的个数进行统计，和就是我们所需要的个数。最后通过一个cleanup函数，打印最后的统计结果即可。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-<span class='line-number'>148</span>
-<span class='line-number'>149</span>
-<span class='line-number'>150</span>
-<span class='line-number'>151</span>
-<span class='line-number'>152</span>
-<span class='line-number'>153</span>
-<span class='line-number'>154</span>
-<span class='line-number'>155</span>
-<span class='line-number'>156</span>
-<span class='line-number'>157</span>
-<span class='line-number'>158</span>
-<span class='line-number'>159</span>
-<span class='line-number'>160</span>
-<span class='line-number'>161</span>
-<span class='line-number'>162</span>
-<span class='line-number'>163</span>
-<span class='line-number'>164</span>
-<span class='line-number'>165</span>
-<span class='line-number'>166</span>
-<span class='line-number'>167</span>
-<span class='line-number'>168</span>
-<span class='line-number'>169</span>
-<span class='line-number'>170</span>
-<span class='line-number'>171</span>
-<span class='line-number'>172</span>
-<span class='line-number'>173</span>
-<span class='line-number'>174</span>
-<span class='line-number'>175</span>
-<span class='line-number'>176</span>
-<span class='line-number'>177</span>
-<span class='line-number'>178</span>
-<span class='line-number'>179</span>
-<span class='line-number'>180</span>
-<span class='line-number'>181</span>
-<span class='line-number'>182</span>
-<span class='line-number'>183</span>
-<span class='line-number'>184</span>
-<span class='line-number'>185</span>
-<span class='line-number'>186</span>
-<span class='line-number'>187</span>
-<span class='line-number'>188</span>
-<span class='line-number'>189</span>
-<span class='line-number'>190</span>
-<span class='line-number'>191</span>
-<span class='line-number'>192</span>
-<span class='line-number'>193</span>
-<span class='line-number'>194</span>
-<span class='line-number'>195</span>
-<span class='line-number'>196</span>
-<span class='line-number'>197</span>
-<span class='line-number'>198</span>
-<span class='line-number'>199</span>
-<span class='line-number'>200</span>
-<span class='line-number'>201</span>
-<span class='line-number'>202</span>
-<span class='line-number'>203</span>
-<span class='line-number'>204</span>
-<span class='line-number'>205</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>import java.io.IOException;
-</span><span class='line'>import java.util.ArrayList;
-</span><span class='line'>import java.util.StringTokenizer;
-</span><span class='line'>
-</span><span class='line'>import org.apache.hadoop.fs.Path;
-</span><span class='line'>import org.apache.hadoop.io.LongWritable;
-</span><span class='line'>import org.apache.hadoop.io.Text;
-</span><span class='line'>import org.apache.hadoop.mapreduce.Job;
-</span><span class='line'>import org.apache.hadoop.mapreduce.Mapper;
-</span><span class='line'>import org.apache.hadoop.mapreduce.Reducer;
-</span><span class='line'>import org.apache.hadoop.util.GenericOptionsParser;
-</span><span class='line'>import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-</span><span class='line'>import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-</span><span class='line'>import org.apache.hadoop.conf.Configuration;
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>public class triangle {
-</span><span class='line'>  
-</span><span class='line'>  public static class sortMapper extends Mapper&lt;Object, Text, Text, Text&gt;{
-</span><span class='line'>      private Text a = new Text();
-</span><span class='line'>      private Text b = new Text();
-</span><span class='line'>      
-</span><span class='line'>      public void map(Object key,Text value,Context context)throws IOException,InterruptedException {
-</span><span class='line'>
-</span><span class='line'>          StringTokenizer itr=new StringTokenizer(value.toString());
-</span><span class='line'>          long first = Integer.parseInt(itr.nextToken());
-</span><span class='line'>          long second = Integer.parseInt(itr.nextToken());
-</span><span class='line'>          if (first &lt;= second){
-</span><span class='line'>              a.set(first+"#"+second);
-</span><span class='line'>              b.set("#");
-</span><span class='line'>          }
-</span><span class='line'>          else{
-</span><span class='line'>              a.set(second+"#"+first);
-</span><span class='line'>              b.set("#");
-</span><span class='line'>          }
-</span><span class='line'>          context.write(a, b);
-</span><span class='line'>      }
-</span><span class='line'>  }
-</span><span class='line'>  
-</span><span class='line'>  public static class sortReducer extends Reducer&lt;Text, Text, Text, Text&gt;{
-</span><span class='line'>      private Text b = new Text();    
-</span><span class='line'>      public void reduce(Text key,Iterable&lt;Text&gt; values,Context context)throws IOException,InterruptedException {
-</span><span class='line'>          //Text b = new Text();
-</span><span class='line'>          b.set("#");
-</span><span class='line'>          context.write(key, b);
-</span><span class='line'>      }
-</span><span class='line'>  }
-</span><span class='line'>  
-</span><span class='line'>  public static class findMap extends Mapper&lt;LongWritable, Text, Text, Text&gt;{
-</span><span class='line'>      public void map(LongWritable key, Text value, Context context)throws IOException,InterruptedException {
-</span><span class='line'>          StringTokenizer itr=new StringTokenizer(value.toString());
-</span><span class='line'>          String[] tokens = itr.nextToken().toString().split("#");
-</span><span class='line'>          //String[] tokens = value.toString().split("#");
-</span><span class='line'>          String a = tokens[0];
-</span><span class='line'>          String b = tokens[1];
-</span><span class='line'>          //System.out.println(a+"    "+b);
-</span><span class='line'>          Text left = new Text();
-</span><span class='line'>          Text right = new Text();
-</span><span class='line'>          left.set(a+"");
-</span><span class='line'>          right.set(b+"");
-</span><span class='line'>          context.write(left, right);
-</span><span class='line'>      }
-</span><span class='line'>  }
-</span><span class='line'>  
-</span><span class='line'>  public static class findReducer extends Reducer&lt;Text, Text, Text, Text&gt;{
-</span><span class='line'>      
-</span><span class='line'>       public void reduce(Text key,Iterable&lt;Text&gt; values,Context context)throws IOException,InterruptedException {
-</span><span class='line'>           ArrayList&lt;String&gt; array = new ArrayList&lt;String&gt;();
-</span><span class='line'>           Text left = new Text();
-</span><span class='line'>           Text right = new Text();
-</span><span class='line'>           right.set("#");
-</span><span class='line'>           for(Text value : values){
-</span><span class='line'>               array.add(value.toString());
-</span><span class='line'>               left.set(key.toString()+"#"+value.toString());
-</span><span class='line'>               context.write(left, right);
-</span><span class='line'>           }
-</span><span class='line'>           for(int i=0; i&lt;array.size(); i++){
-</span><span class='line'>               for(int j=i+1; j&lt;array.size(); j++){
-</span><span class='line'>                   Text a = new Text();
-</span><span class='line'>                   Text b = new Text();
-</span><span class='line'>                   if(Integer.parseInt(array.get(i)) &lt; Integer.parseInt(array.get(j))){
-</span><span class='line'>                       a.set(array.get(i)+"#"+array.get(j));
-</span><span class='line'>                       b.set("&");
-</span><span class='line'>                   }
-</span><span class='line'>                   else{
-</span><span class='line'>                       a.set(array.get(j)+"#"+array.get(i));
-</span><span class='line'>                       b.set("&");
-</span><span class='line'>                   }
-</span><span class='line'>                   context.write(a, b);
-</span><span class='line'>               }
-</span><span class='line'>           }
-</span><span class='line'>       }
-</span><span class='line'>  }
-</span><span class='line'>  
-</span><span class='line'>  public static class combineMap extends Mapper&lt;LongWritable, Text, Text, Text&gt;{
-</span><span class='line'>      private Text a = new Text();
-</span><span class='line'>      private Text b = new Text();
-</span><span class='line'>      public void map(LongWritable key,Text value,Context context)throws IOException,InterruptedException {
-</span><span class='line'>          StringTokenizer itr=new StringTokenizer(value.toString());
-</span><span class='line'>          a.set(itr.nextToken().toString());
-</span><span class='line'>          b.set(itr.nextToken().toString());
-</span><span class='line'>          context.write(a, b);
-</span><span class='line'>      }
-</span><span class='line'>  }
-</span><span class='line'>  
-</span><span class='line'>  public static class combineReducer extends Reducer&lt;Text, Text, Text, Text&gt;{
-</span><span class='line'>      private static int result = 0;
-</span><span class='line'>      //private Text a = new Text();
-</span><span class='line'>      //private Text b = new Text();
-</span><span class='line'>      
-</span><span class='line'>      public void cleanup(Context context) throws IOException, InterruptedException{
-</span><span class='line'>          context.write(new Text("Result: "), new Text(""+result));
-</span><span class='line'>      }
-</span><span class='line'>      
-</span><span class='line'>      public void reduce(Text key,Iterable&lt;Text&gt; values,Context context)throws IOException,InterruptedException {
-</span><span class='line'>          int count = 0;
-</span><span class='line'>          int is_triangle = 0;
-</span><span class='line'>          for(Text value : values){
-</span><span class='line'>              if(value.toString().equalsIgnoreCase("#")){
-</span><span class='line'>                  is_triangle = 1;
-</span><span class='line'>              }else if(value.toString().equalsIgnoreCase("&")){
-</span><span class='line'>                  count ++;
-</span><span class='line'>              }else{
-</span><span class='line'>                  //System.out.println("wrong input number");
-</span><span class='line'>              }
-</span><span class='line'>          }
-</span><span class='line'>          if (is_triangle == 1){
-</span><span class='line'>              result += count;
-</span><span class='line'>          }
-</span><span class='line'>          //b.set(result+"");
-</span><span class='line'>          //context.write(key, new Text(count+""));
-</span><span class='line'>      }
-</span><span class='line'>  }
-</span><span class='line'>  
-</span><span class='line'>  public static void main(String[] args) throws Exception {
-</span><span class='line'>        // TODO Auto-generated method stub
-</span><span class='line'>        Configuration conf=new Configuration();
-</span><span class='line'>        String[] otherArgs=new GenericOptionsParser(conf,args).getRemainingArgs();
-</span><span class='line'>        if (otherArgs.length!=4) {
-</span><span class='line'>            System.err.println("Usage:invertedindex&lt;in&gt; &lt;out1&gt; &lt;out2&gt; &lt;out3&gt;");
-</span><span class='line'>            System.exit(2);
-</span><span class='line'>        }
-</span><span class='line'>        
-</span><span class='line'>        Job job1 = new Job(conf, "job1");
-</span><span class='line'>        job1.setJarByClass(triangle.class);
-</span><span class='line'>        job1.setMapperClass(sortMapper.class);
-</span><span class='line'>        job1.setMapOutputKeyClass(Text.class);
-</span><span class='line'>        job1.setMapOutputValueClass(Text.class);
-</span><span class='line'>        job1.setReducerClass(sortReducer.class);
-</span><span class='line'>        job1.setOutputKeyClass(Text.class);
-</span><span class='line'>        job1.setOutputValueClass(Text.class);
-</span><span class='line'>
-</span><span class='line'>        //job1.setInputFormatClass(TextInputFormat.class);
-</span><span class='line'>        //job1.setOutputFormatClass(TextOutputFormat.class);
-</span><span class='line'>        //job1.setMapOutputKeyClass(Text.class);
-</span><span class='line'>        //job1.setMapOutputValueClass(Text.class);
-</span><span class='line'>        
-</span><span class='line'>        FileInputFormat.addInputPath(job1, new Path(otherArgs[0]));
-</span><span class='line'>        FileOutputFormat.setOutputPath(job1, new Path(otherArgs[1]));
-</span><span class='line'>        
-</span><span class='line'>        job1.waitForCompletion(true);
-</span><span class='line'>        
-</span><span class='line'>
-</span><span class='line'>        Job job2 = new Job(conf, "job2");
-</span><span class='line'>        job2.setJarByClass(triangle.class);
-</span><span class='line'>        job2.setMapperClass(findMap.class);
-</span><span class='line'>        job2.setMapOutputKeyClass(Text.class);
-</span><span class='line'>        job2.setMapOutputValueClass(Text.class);
-</span><span class='line'>        job2.setReducerClass(findReducer.class);
-</span><span class='line'>        job2.setOutputKeyClass(Text.class);
-</span><span class='line'>        job2.setOutputValueClass(Text.class);
-</span><span class='line'>        
-</span><span class='line'>        //job2.setInputFormatClass(TextInputFormat.class);
-</span><span class='line'>        //job2.setOutputFormatClass(TextOutputFormat.class);
-</span><span class='line'>        //job2.setMapOutputKeyClass(Text.class);
-</span><span class='line'>        //job2.setMapOutputValueClass(Text.class);
-</span><span class='line'>        
-</span><span class='line'>        FileInputFormat.addInputPath(job2, new Path(otherArgs[1]));
-</span><span class='line'>        FileOutputFormat.setOutputPath(job2, new Path(otherArgs[2]));
-</span><span class='line'>        
-</span><span class='line'>        job2.waitForCompletion(job1.isComplete());
-</span><span class='line'>     
-</span><span class='line'>        Job job3 = new Job(conf, "job3");
-</span><span class='line'>        job3.setJarByClass(triangle.class);
-</span><span class='line'>        job3.setMapperClass(combineMap.class);
-</span><span class='line'>        job3.setMapOutputKeyClass(Text.class);
-</span><span class='line'>        job3.setMapOutputValueClass(Text.class);
-</span><span class='line'>        job3.setReducerClass(combineReducer.class);
-</span><span class='line'>        job3.setOutputKeyClass(Text.class);
-</span><span class='line'>        job3.setOutputValueClass(Text.class);
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        //job3.setInputFormatClass(TextInputFormat.class);
-</span><span class='line'>        //job3.setOutputFormatClass(TextOutputFormat.class);
-</span><span class='line'>        //job3.setMapOutputKeyClass(Text.class);
-</span><span class='line'>        //job3.setMapOutputValueClass(Text.class);
-</span><span class='line'>        
-</span><span class='line'>        FileInputFormat.addInputPath(job3, new Path(otherArgs[2]));
-</span><span class='line'>        FileOutputFormat.setOutputPath(job3, new Path(otherArgs[3]));
-</span><span class='line'>        
-</span><span class='line'>        job3.waitForCompletion(job2.isComplete());
-</span><span class='line'>
-</span><span class='line'>    }
-</span><span class='line'>  
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
 ]]></content>
   </entry>
